@@ -1,0 +1,6 @@
+pytest
+plate
+
+requests
+bs4
+lxml

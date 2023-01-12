@@ -4,3 +4,9 @@ plate
 requests
 bs4
 lxml
+
+twitch-python
+langcodes
+language_data
+
+python-telegram-bot

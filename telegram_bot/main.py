@@ -25,6 +25,9 @@ def main():
         level=logging.INFO
     )
 
+    logging.info('initializing data loader')
+    matches_data_loader.initialize()
+
     logging.info('starting bot')
     application = telegram.ext.ApplicationBuilder().token(config.BOT_TOKEN).build()
 

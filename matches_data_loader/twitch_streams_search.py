@@ -9,6 +9,9 @@ import matches_data_loader.config as config
 from dataclasses import dataclass
 
 
+_logger = logging.getLogger('twitch_streams_search')
+
+
 @dataclass(eq=False)
 class StreamInfo:
     channel_login: str
@@ -137,7 +140,7 @@ class TwitchDota2Api:
         self._next_update = now + config.TWITCH_STREAMS_UPDATE_TIMEOUT
 
     def _reload_dota2_streams(self):
-        logging.info('reloading dota2 streams')
+        _logger.info('reloading dota2 streams')
 
         self._streams: typing.List[twitch.helix.Stream] = \
             list(self._helix.streams(game_id=self._dota2_id, first=twitch.helix.Streams.FIRST_API_LIMIT))
@@ -148,12 +151,12 @@ class TwitchDota2Api:
             else:
                 stream.language = langcodes.Language.get(stream.language).display_name('ru')
 
-        logging.info('dota2 %d streams loaded' % len(self._streams))
+        _logger.info('dota2 %d streams loaded' % len(self._streams))
 
     @staticmethod
     def get_thumbnail(uri: str):
         uri = uri.replace('{width}x{height}', '%dx%d' % config.TWITCH_THUMBNAIL_WH, 1)
-        logging.info('loading twitch thumbnail from %s' % uri)
+        _logger.info('loading twitch thumbnail from %s' % uri)
         r = requests.get(uri)
         return r.content
 

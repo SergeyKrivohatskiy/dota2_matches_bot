@@ -6,6 +6,14 @@
   "remove_all_reminders": "remove all reminders",
   "following_all": "You follow all upcoming matches",
   "remove_reminder": "unfollow",
+  "following_team": "You follow team {team}",
   "following_tournament": "You follow tournament {tournament}",
-  "removed_reminder": "unfollowed"
+  "removed_reminder": "unfollowed",
+  "follow_message": "You may follow all upcoming matches or follow a team or a tournament:",
+  "follow_all": "all matches",
+  "follow_team": "team",
+  "follow_tournament": "tournament",
+  "added_reminder": "a reminder is added",
+  "follow_team_select": "Please select a team to follow:",
+  "follow_tournament_select": "Please select a tournament to follow:"
 }

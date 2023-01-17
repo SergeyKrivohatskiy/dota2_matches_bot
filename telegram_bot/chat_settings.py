@@ -15,14 +15,14 @@ class SettingsStorage:
         if chat_id not in self._data:
             self._data[chat_id] = dict()
 
-    def get(self, chat_id, key, default=None):
+    def get(self, chat_id: str, key: str, default=None):
         with self._lock:
             self._check_chat_exists(chat_id)
             if key not in self._data[chat_id]:
                 return default
             return self._data[chat_id][key]
 
-    def set(self, chat_id, key, value):
+    def set(self, chat_id: str, key, value):
         with self._lock:
             self._check_chat_exists(chat_id)
             self._data[chat_id][key] = value
@@ -46,9 +46,9 @@ def get_lang_for_known_chat(chat_id):
 
 
 def get_lang(update: telegram.Update):
-    lang = storage().get(update.effective_chat.id, _LANG_KEY)
+    lang = storage().get(str(update.effective_chat.id), _LANG_KEY)
     if lang is not None:
         return lang
 
-    storage().set(update.effective_chat.id, _LANG_KEY, update.effective_user.language_code)
+    storage().set(str(update.effective_chat.id), _LANG_KEY, update.effective_user.language_code)
     return get_lang(update)

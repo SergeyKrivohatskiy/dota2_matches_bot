@@ -15,5 +15,14 @@
   "follow_tournament": "tournament",
   "added_reminder": "a reminder is added",
   "follow_team_select": "Please select a team to follow:",
-  "follow_tournament_select": "Please select a tournament to follow:"
+  "follow_tournament_select": "Please select a tournament to follow:",
+  "match_live": "\uD83D\uDD34 match is live",
+  "match_live_with_duration": "\uD83D\uDD34 match is live for {minutes} minutes",
+  "match_starts_soon": "starts in {minutes} minutes",
+  "match_starts_in": "starts in {hours}:{minutes}",
+  "tournament_in_match": "Tournament: \"{name}\"",
+  "tier_1_tournament": "tier 1 \uD83E\uDD47",
+  "tier_2_tournament": "tier 2 \uD83E\uDD48",
+  "tier_3_tournament": "tier 3 \uD83E\uDD49",
+  "tier_4_tournament": "tier 4"
 }

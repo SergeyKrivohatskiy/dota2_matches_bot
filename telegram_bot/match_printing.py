@@ -2,6 +2,11 @@ import matches_data_loader
 import localization
 import typing
 import datetime
+import logging
+import re
+
+
+_logger = logging.getLogger('match_printing')
 
 
 def _escape(s: str):
@@ -23,6 +28,27 @@ def _streams_str(streams):
     return res
 
 
+def _get_tier_icon(tournament, lang):
+    if tournament.tier is None:
+        return ''
+    try:
+        m = re.match(r'Tier (\d+)', tournament.tier)
+        if m is None:
+            raise ValueError()
+        tier = int(m.group(1))
+        if not (1 <= tier <= 4):
+            raise ValueError()
+    except ValueError:
+        _logger.warning(f'bad tournament tier: {tournament.tier}')
+        return ''
+    tier = [localization.get('tier_1_tournament', lang),
+            localization.get('tier_2_tournament', lang),
+            localization.get('tier_3_tournament', lang),
+            localization.get('tier_4_tournament', lang)][tier - 1]
+
+    return ', ' + tier
+
+
 def match_message(lang: str, match: matches_data_loader.Dota2Match):
     def team_name(team: matches_data_loader.Dota2Team):
         if team is None:
@@ -33,21 +59,56 @@ def match_message(lang: str, match: matches_data_loader.Dota2Match):
         return '||%d:%d||' % score
 
     def start_time_str(start_time: typing.Optional[datetime.datetime]):
-        # TODO
         is_live = match.start_time is None
         if is_live:
-            return 'live'
-        return _escape('TODO time')
+            return localization.get('match_live', lang)
+
+        now = datetime.datetime.now(tz=datetime.timezone.utc)
+        if now > start_time:
+            minutes_after_start = ((now - start_time).seconds // 60)
+            return localization.get('match_live_with_duration', lang, minutes=minutes_after_start)
+        else:
+            minutes_before_start = (start_time - now).seconds // 60
+            if minutes_before_start < 60:
+                return _escape(localization.get('match_starts_soon', lang, minutes=minutes_before_start))
+            else:
+                hours_before_start = minutes_before_start // 60
+                minutes_before_start = minutes_before_start % 60
+                return _escape(localization.get('match_starts_in', lang,
+                                                minutes=minutes_before_start,
+                                                hours=hours_before_start))
 
     start_time = start_time_str(match.start_time)
     has_score = match.score is not None
     score_or_vs = score_str(match.score) if has_score else 'vs'
     format_str = (' \\(%s\\)' % _escape(match.format)) if match.format is not None else ''
 
-    tournament_str = _escape(match.tournament.name)
+    tournament_str = _escape(localization.get('tournament_in_match', lang, name=match.tournament.name))
+    tournament_str += _get_tier_icon(match.tournament, lang)
 
     streams_str = ''  # TODO _streams_str(match.streams)
 
-    return f'{team_name(match.team1)} {score_or_vs} {team_name(match.team2)}{format_str} {start_time}\n'\
+    return f'{team_name(match.team1)} {score_or_vs} {team_name(match.team2)}{format_str}\n' \
+           f'{start_time}\n'\
            f'{tournament_str}'\
            f'{streams_str}'
+
+
+def _run_simple_test():
+    match = matches_data_loader.Dota2Match(matches_data_loader.Dota2Team('team name 1', None, 'liq_page', 'icon'),
+                                           None,
+                                           matches_data_loader.TournamentInfo('tournament_name', 'liq_page', 1,
+                                                                              '12 - 13', 1234, 21, 'EU'),
+                                           [],
+                                           (1, 0),
+                                           'Bo5',
+                                           datetime.datetime.now(tz=datetime.timezone.utc) -
+                                           datetime.timedelta(seconds=421))
+
+    print(match_message('ru', match))
+    print()
+    print(match_message('en', match))
+
+
+if __name__ == '__main__':
+    _run_simple_test()

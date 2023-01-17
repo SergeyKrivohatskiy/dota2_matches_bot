@@ -15,5 +15,14 @@
   "follow_tournament": "турнир",
   "added_reminder": "напоминание добавлено",
   "follow_team_select": "Пожалуйста выберите какую команду отслеживать:",
-  "follow_tournament_select": "Пожалуйста выберите какой турнир отслеживать:"
+  "follow_tournament_select": "Пожалуйста выберите какой турнир отслеживать:",
+  "match_live": "\uD83D\uDD34 матч начался",
+  "match_live_with_duration": "\uD83D\uDD34 матч идёт уже {minutes} минут",
+  "match_starts_soon": "начнётся через {minutes} минут",
+  "match_starts_in": "начнётся через {hours}:{minutes}",
+  "tournament_in_match": "Турнир: \"{name}\"",
+  "tier_1_tournament": "tier 1 \uD83E\uDD47",
+  "tier_2_tournament": "tier 2 \uD83E\uDD48",
+  "tier_3_tournament": "tier 3 \uD83E\uDD49",
+  "tier_4_tournament": "tier 4"
 }

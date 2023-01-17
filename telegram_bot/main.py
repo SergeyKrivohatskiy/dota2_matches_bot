@@ -8,6 +8,7 @@ import localization
 import reminders_storage
 import matches_data_loader
 import reminders_sender
+from chat_settings import get_lang
 
 
 def _inline_keyboard(buttons: typing.List[typing.List[typing.Tuple[str, str]]]):
@@ -19,7 +20,7 @@ def _inline_keyboard(buttons: typing.List[typing.List[typing.Tuple[str, str]]]):
 async def start(update: telegram.Update, context: telegram.ext.ContextTypes.DEFAULT_TYPE):
     logging.info(f'start called by {update.effective_user.name}')
     await context.bot.send_message(chat_id=update.effective_chat.id,
-                                   text=localization.get('start_message', update.effective_user.language_code),
+                                   text=localization.get('start_message', get_lang(update)),
                                    parse_mode='MarkdownV2',
                                    reply_markup=_inline_keyboard([[('text1', 'data1'), ('text2', 'data2')],
                                                                   [('text3', 'data3')]]))
@@ -47,7 +48,7 @@ async def _process_remove_reminders_callbacks(
     if removed:
         await context.bot.send_message(
             chat_id=update.effective_chat.id,
-            text=localization.get('removed_reminder', update.effective_user.language_code))
+            text=localization.get('removed_reminder', get_lang(update)))
 
     return removed
 
@@ -76,14 +77,14 @@ async def _process_follow_callbacks(update: telegram.Update, context: telegram.e
     elif update.callback_query.data == 'follow_team':
         await context.bot.send_message(
             chat_id=update.effective_chat.id,
-            text=localization.get('follow_team_select', update.effective_user.language_code),
+            text=localization.get('follow_team_select', get_lang(update)),
             reply_markup=_generate_command_with_options_keyboard(
                 3, 'follow_team', matches_data_loader.get_teams()))
         return True
     elif update.callback_query.data == 'follow_tournament':
         await context.bot.send_message(
             chat_id=update.effective_chat.id,
-            text=localization.get('follow_tournament_select', update.effective_user.language_code),
+            text=localization.get('follow_tournament_select', get_lang(update)),
             reply_markup=_generate_command_with_options_keyboard(
                 1, 'follow_tournament', matches_data_loader.get_tournaments()))
         return True
@@ -101,7 +102,7 @@ async def _process_follow_callbacks(update: telegram.Update, context: telegram.e
     if followed:
         await context.bot.send_message(
             chat_id=update.effective_chat.id,
-            text=localization.get('added_reminder', update.effective_user.language_code))
+            text=localization.get('added_reminder', get_lang(update)))
 
     return followed
 
@@ -126,48 +127,48 @@ async def following(update: telegram.Update, context: telegram.ext.ContextTypes.
     reminders = rs.get_reminders(str(update.effective_chat.id))
     if len(reminders) != 0:
         reply_markup = _inline_keyboard(
-            [[(localization.get('remove_all_reminders', update.effective_user.language_code), 'remove_all_reminders')]])
+            [[(localization.get('remove_all_reminders', get_lang(update)), 'remove_all_reminders')]])
     else:
         reply_markup = None
     await context.bot.send_message(
         chat_id=update.effective_chat.id,
-        text=localization.get('reminders_count', update.effective_user.language_code, count=len(reminders)),
+        text=localization.get('reminders_count', get_lang(update), count=len(reminders)),
         reply_markup=reply_markup)
 
     for reminder in reminders:
         if reminder.type_ == 'team':
             await context.bot.send_message(
                 chat_id=update.effective_chat.id,
-                text=localization.get('following_team', update.effective_user.language_code,
+                text=localization.get('following_team', get_lang(update),
                                       team=reminder.value),
                 reply_markup=_inline_keyboard(
-                    [[(localization.get('remove_reminder', update.effective_user.language_code),
+                    [[(localization.get('remove_reminder', get_lang(update)),
                        'remove_team_reminder ' + reminder.value)]]))
         elif reminder.type_ == 'tournament':
             await context.bot.send_message(
                 chat_id=update.effective_chat.id,
-                text=localization.get('following_tournament', update.effective_user.language_code,
+                text=localization.get('following_tournament', get_lang(update),
                                       tournament=reminder.value),
                 reply_markup=_inline_keyboard(
-                    [[(localization.get('remove_reminder', update.effective_user.language_code),
+                    [[(localization.get('remove_reminder', get_lang(update)),
                        'remove_tournament_reminder ' + reminder.value)]]))
         elif reminder.type_ == 'all':
             await context.bot.send_message(
                 chat_id=update.effective_chat.id,
-                text=localization.get('following_all', update.effective_user.language_code),
+                text=localization.get('following_all', get_lang(update)),
                 reply_markup=_inline_keyboard(
-                    [[(localization.get('remove_reminder', update.effective_user.language_code),
+                    [[(localization.get('remove_reminder', get_lang(update)),
                        'remove_all_reminder')]]))
 
 
 async def follow(update: telegram.Update, context: telegram.ext.ContextTypes.DEFAULT_TYPE):
     await context.bot.send_message(
         chat_id=update.effective_chat.id,
-        text=localization.get('follow_message', update.effective_user.language_code),
+        text=localization.get('follow_message', get_lang(update)),
         reply_markup=_inline_keyboard(
-            [[(localization.get('follow_all', update.effective_user.language_code), 'follow_all'),
-              (localization.get('follow_team', update.effective_user.language_code), 'follow_team'),
-              (localization.get('follow_tournament', update.effective_user.language_code), 'follow_tournament')]]))
+            [[(localization.get('follow_all', get_lang(update)), 'follow_all'),
+              (localization.get('follow_team', get_lang(update)), 'follow_team'),
+              (localization.get('follow_tournament', get_lang(update)), 'follow_tournament')]]))
 
 
 async def settings(update: telegram.Update, context: telegram.ext.ContextTypes.DEFAULT_TYPE):
@@ -191,7 +192,7 @@ def _streams_str(streams):
 
 
 def _match_message(update: telegram.Update, match: matches_data_loader.Dota2Match):
-    lang = update.effective_user.language_code
+    lang = get_lang(update)
 
     def team_name(team: matches_data_loader.Dota2Team):
         if team is None:

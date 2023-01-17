@@ -24,22 +24,23 @@ async def start(update: telegram.Update, context: telegram.ext.ContextTypes.DEFA
                                                                   [('text3', 'data3')]]))
 
 
-async def _process_remove_reminders_callbacks(update: telegram.Update, context: telegram.ext.ContextTypes.DEFAULT_TYPE) -> bool:
+async def _process_remove_reminders_callbacks(
+        update: telegram.Update, context: telegram.ext.ContextTypes.DEFAULT_TYPE) -> bool:
     rs = reminders_storage.storage()
     removed = False
     if update.callback_query.data == 'remove_all_reminders':
-        rs.remove_all_reminders(str(update.effective_user.id))
+        rs.remove_all_reminders(str(update.effective_chat.id))
         removed = True
     elif update.callback_query.data == 'remove_all_reminder':
-        rs.remove_all_reminder(str(update.effective_user.id))
+        rs.remove_all_reminder(str(update.effective_chat.id))
         removed = True
     elif update.callback_query.data.startswith('remove_tournament_reminder '):
         tournament = update.callback_query.data[len('remove_tournament_reminder '):]
-        rs.remove_tournament_reminder(str(update.effective_user.id), tournament)
+        rs.remove_tournament_reminder(str(update.effective_chat.id), tournament)
         removed = True
     elif update.callback_query.data.startswith('remove_team_reminder '):
         team = update.callback_query.data[len('remove_team_reminder '):]
-        rs.remove_team_reminder(str(update.effective_user.id), team)
+        rs.remove_team_reminder(str(update.effective_chat.id), team)
         removed = True
 
     if removed:
@@ -69,7 +70,7 @@ async def _process_follow_callbacks(update: telegram.Update, context: telegram.e
     rs = reminders_storage.storage()
     followed = False
     if update.callback_query.data == 'follow_all':
-        rs.add_all_reminder(str(update.effective_user.id))
+        rs.add_all_reminder(str(update.effective_chat.id))
         followed = True
     elif update.callback_query.data == 'follow_team':
         await context.bot.send_message(
@@ -88,12 +89,12 @@ async def _process_follow_callbacks(update: telegram.Update, context: telegram.e
     elif update.callback_query.data.startswith('follow_tournament '):
         tournament = update.callback_query.data[len('follow_tournament '):]
         # TODO check validity?
-        rs.add_tournament_reminder(str(update.effective_user.id), tournament)
+        rs.add_tournament_reminder(str(update.effective_chat.id), tournament)
         followed = True
     elif update.callback_query.data.startswith('follow_team '):
         team = update.callback_query.data[len('follow_team '):]
         # TODO check validity?
-        rs.add_team_reminder(str(update.effective_user.id), team)
+        rs.add_team_reminder(str(update.effective_chat.id), team)
         followed = True
 
     if followed:
@@ -121,7 +122,7 @@ async def help_handler(update: telegram.Update, context: telegram.ext.ContextTyp
 
 async def following(update: telegram.Update, context: telegram.ext.ContextTypes.DEFAULT_TYPE):
     rs = reminders_storage.storage()
-    reminders = rs.get_reminders(str(update.effective_user.id))
+    reminders = rs.get_reminders(str(update.effective_chat.id))
     if len(reminders) != 0:
         reply_markup = _inline_keyboard(
             [[(localization.get('remove_all_reminders', update.effective_user.language_code), 'remove_all_reminders')]])

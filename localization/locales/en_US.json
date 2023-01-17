@@ -1,5 +1,11 @@
 {
   "dota2": "Dota 2",
   "start_message": "TODO",
-  "tbd_team": "TBD"
+  "tbd_team": "TBD",
+  "reminders_count": "You don't follow any team or tournament. Use /follow to add reminders for upcoming matches. | You have one active reminder: | You have {count} active reminders:",
+  "remove_all_reminders": "remove all reminders",
+  "following_all": "You follow all upcoming matches",
+  "remove_reminder": "unfollow",
+  "following_tournament": "You follow tournament {tournament}",
+  "removed_reminder": "unfollowed"
 }

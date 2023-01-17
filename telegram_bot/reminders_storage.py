@@ -1,6 +1,10 @@
 import typing
 import threading
+import logging
 from dataclasses import dataclass
+
+
+_logger = logging.getLogger('reminders_storage')
 
 
 @dataclass(eq=False)
@@ -26,10 +30,12 @@ class RemindersStorage:
         self._team_reminders: typing.Dict[str, typing.Set[str]] = dict()
         self._tournament_reminders: typing.Dict[str, typing.Set[str]] = dict()
         self._all_reminders: typing.Set[str] = set()
+        _logger.debug('created storage')
 
     def _check_user_exists(self, user_id):
         if user_id not in self._user_reminders:
             self._user_reminders[user_id] = set()
+            _logger.info(f'new user {user_id}')
 
     def _check_team_exists(self, team_id):
         if team_id not in self._team_reminders:
@@ -48,6 +54,7 @@ class RemindersStorage:
             self._user_reminders[user_id].add(team_reminder)
             self._check_team_exists(team_id)
             self._team_reminders[team_id].add(user_id)
+            _logger.info(f'new team reminder for {user_id}, team {team_id}')
 
     def remove_team_reminder(self, user_id: str, team_id: str):
         with self._lock:
@@ -56,6 +63,7 @@ class RemindersStorage:
             if team_reminder not in self._user_reminders[user_id]:
                 return
             self._user_reminders[user_id].remove(team_reminder)
+            _logger.info(f'removed team reminder for {user_id}, team {team_id}')
             if team_id in self._team_reminders:
                 self._team_reminders[team_id].remove(user_id)
             
@@ -68,6 +76,7 @@ class RemindersStorage:
             self._user_reminders[user_id].add(tournament_reminder)
             self._check_tournament_exists(tournament_id)
             self._tournament_reminders[tournament_id].add(user_id)
+            _logger.info(f'new tournament reminder for {user_id}, tournament {tournament_id}')
 
     def remove_tournament_reminder(self, user_id: str, tournament_id: str):
         with self._lock:
@@ -76,6 +85,7 @@ class RemindersStorage:
             if tournament_reminder not in self._user_reminders[user_id]:
                 return
             self._user_reminders[user_id].remove(tournament_reminder)
+            _logger.info(f'removed tournament reminder for {user_id}, tournament {tournament_id}')
             if tournament_id in self._tournament_reminders:
                 self._tournament_reminders[tournament_id].remove(user_id)
 
@@ -85,6 +95,18 @@ class RemindersStorage:
             all_reminder = UserReminder('all', None)
             self._user_reminders[user_id].add(all_reminder)
             self._all_reminders.add(user_id)
+            _logger.info(f'new all reminder for {user_id}')
+
+    def remove_all_reminder(self, user_id: str):
+        with self._lock:
+            self._check_user_exists(user_id)
+            all_reminder = UserReminder('all', None)
+            if all_reminder not in self._user_reminders[user_id]:
+                return
+            self._user_reminders[user_id].remove(all_reminder)
+            _logger.info(f'removed all reminder for {user_id}')
+            if user_id in self._all_reminders:
+                self._all_reminders.remove(user_id)
 
     def remove_all_reminders(self, user_id: str):
         with self._lock:
@@ -99,6 +121,7 @@ class RemindersStorage:
                     if reminder.value in self._tournament_reminders:
                         self._tournament_reminders[reminder.value].remove(user_id)
             self._user_reminders[user_id].clear()
+            _logger.info(f'removed all reminders for {user_id}')
 
     def _get_team_reminded(self, team_id: typing.Optional[str]):
         if team_id is None or team_id not in self._team_reminders:
@@ -112,14 +135,17 @@ class RemindersStorage:
 
     def get_reminded_user_ids(self, match_descriptor: MatchDescriptor) -> typing.Set[str]:
         with self._lock:
-            return self._get_team_reminded(match_descriptor.team1_id) | \
-                   self._get_team_reminded(match_descriptor.team2_id) | \
-                   self._get_tournament_reminded(match_descriptor.tournament_id) | \
-                   self._all_reminders
+            result = self._get_team_reminded(match_descriptor.team1_id) | \
+                     self._get_team_reminded(match_descriptor.team2_id) | \
+                     self._get_tournament_reminded(match_descriptor.tournament_id) | \
+                     self._all_reminders
+            _logger.info(f'found {len(result)} users to remind about match {str(match_descriptor)}')
+            return result
 
-    def get_reminders(self, user_id) -> typing.Set[UserReminder]:
+    def get_reminders(self, user_id: str) -> typing.Set[UserReminder]:
         with self._lock:
             self._check_user_exists(user_id)
+            _logger.info(f'reporting {len(self._user_reminders[user_id])} reminders for user {user_id}')
             return self._user_reminders[user_id]
 
 

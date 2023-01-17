@@ -6,7 +6,7 @@ from liquipedia_dota_api.config import DEFAULT_PARSE_PERIOD, DEFAULT_GET_PERIOD
 from liquipedia_dota_api.dota2_dataclasses import *
 
 __all__ = ['Dota2Api', 'DEFAULT_PARSE_PERIOD', 'DEFAULT_GET_PERIOD',
-           'Dota2Team', 'Dota2Match', 'Dota2TeamInMatch', 'TournamentInfoInMatch']
+           'Dota2Team', 'Dota2Match', 'Dota2Tournament', 'Dota2TeamInMatch', 'TournamentInfoInMatch']
 
 
 def _parse_team_in_match(team_info):

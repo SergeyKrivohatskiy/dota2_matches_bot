@@ -9,6 +9,9 @@ import matches_data_loader.twitch_streams_search as twitch_streams_search
 import matches_data_loader.config as config
 
 
+_logger = logging.getLogger('data_loader')
+
+
 @dataclass(eq=False)
 class Dota2Team:
     name: str
@@ -39,6 +42,13 @@ class Dota2Match:
     start_time: typing.Optional[datetime.datetime]  # None means game is in progress
 
 
+@dataclass(eq=False)
+class _Data:
+    upcoming_matches: typing.List[Dota2Match]
+    team_names_to_id: typing.Dict[str, str]
+    tournament_names_to_id: typing.Dict[str, str]
+
+
 def _match_starts_soon_or_started(match: liquipedia_dota_api.Dota2Match) -> bool:
     if match.start_time is None:
         return True
@@ -53,11 +63,19 @@ def _get_team_page_to_region(teams):
     return team_page_to_region
 
 
+def _name_to_id_map(liquipedia_items: typing.Union[typing.List[liquipedia_dota_api.Dota2Team],
+                                                   typing.List[liquipedia_dota_api.Dota2Tournament]]):
+    result = dict()
+    for item in liquipedia_items:
+        result[item.name] = item.liquipedia_page
+    return result
+
+
 class DataLoader:
     def __init__(self, data_update_period=config.DATA_UPDATE_TIMEOUT):
         self._dota2_api = liquipedia_dota_api.Dota2Api(app_name=config.APP_NAME)
         self._twitch_streams_searcher = twitch_streams_search.TwitchDota2Api()
-        self._matches: typing.List[Dota2Match] = []
+        self._data: _Data = _Data([], {}, {})
         self._data_version = 0
         self._data_lock = threading.Lock()
         self._data_update_stop_event = threading.Event()
@@ -68,9 +86,9 @@ class DataLoader:
     def __del__(self):
         self.stop_data_update()
 
-    def data(self) -> typing.List[Dota2Match]:
+    def data(self) -> _Data:
         with self._data_lock:
-            return self._matches
+            return self._data
 
     def data_version(self):
         with self._data_lock:
@@ -79,24 +97,24 @@ class DataLoader:
     def stop_data_update(self):
         if self._data_update_stop_event.is_set():
             return
-        logging.info('Stopping data updating')
+        _logger.info('Stopping data updating')
         self._data_update_stop_event.set()
         self._data_update_thread.join()
 
     def _data_update(self):
         try:
-            logging.info('Started data updating')
+            _logger.info('Started data updating')
             matches: typing.List[liquipedia_dota_api.Dota2Match] = self._dota2_api.get_matches()
             matches = matches[:config.MAXIMUM_MATCHES_TO_LOAD]
             streams: typing.List[typing.List[twitch_streams_search.StreamInfo]] = self._get_streams_info(matches)
 
             # TODO maybe do not update every time
             teams: typing.List[liquipedia_dota_api.Dota2Team] = self._dota2_api.get_teams()
-            logging.info('%d teams loaded' % len(teams))
+            _logger.info('%d teams loaded' % len(teams))
 
             # TODO maybe do not update every time
             tournaments = self._dota2_api.get_tournaments()
-            logging.info('%d tournaments loaded' % len(tournaments))
+            _logger.info('%d tournaments loaded' % len(tournaments))
 
             team_page_to_region = _get_team_page_to_region(teams)
 
@@ -104,7 +122,7 @@ class DataLoader:
                 if source.liquipedia_page in team_page_to_region:
                     return team_page_to_region[source.liquipedia_page]
                 else:
-                    logging.info('team %s region not found' % source.name)
+                    _logger.info('team %s region not found' % source.name)
                     return None
 
             def get_team_info(source: liquipedia_dota_api.Dota2TeamInMatch):
@@ -125,7 +143,7 @@ class DataLoader:
                     date = info.date
                     teams_count = info.teams_count
                 else:
-                    logging.info('tournament %s info not found' % source.name)
+                    _logger.info('tournament %s info not found' % source.name)
                     location = None
                     prize_pool_dollars = None
                     tier = None
@@ -145,13 +163,13 @@ class DataLoader:
                     match.format,
                     match.start_time))
 
-            self._update_data(new_matches)
+            self._update_data(_Data(new_matches, _name_to_id_map(teams), _name_to_id_map(tournaments)))
         except liquipedia_dota_api.RequestsException as e:
-            logging.error('Dota2Api RequestsException. Code: %d' % e.code, exc_info=e)
-            if self._matches is not None:
+            _logger.error('Dota2Api RequestsException. Code: %d' % e.code, exc_info=e)
+            if self._data is not None:
                 return
         except Exception as e:
-            logging.error('Dota2Api Exception', exc_info=e)
+            _logger.error('Dota2Api Exception', exc_info=e)
 
     def _data_update_loop(self):
         while True:
@@ -172,12 +190,15 @@ class DataLoader:
         return self._twitch_streams_searcher.find_match_streams(
             match.team1.name, match.team2.name, match.tournament.name)
 
-    def _update_data(self, new_matches):
+    def _update_data(self, new_matches: _Data):
         with self._data_lock:
-            self._matches = new_matches
+            self._data = new_matches
             self._data_version += 1
-            logging.info('Data updating finished. %d matches saved. Version %d' %
-                         (len(self._matches), self._data_version))
+            _logger.info('Data updating finished. %d matches saved, %d teams and %d tournaments. Version %d' %
+                         (len(self._data.upcoming_matches),
+                          len(self._data.team_names_to_id),
+                          len(self._data.tournament_names_to_id),
+                          self._data_version))
 
 
 def _run_data_loader():
@@ -185,7 +206,7 @@ def _run_data_loader():
     data_provider = DataLoader(data_update_period=config.DATA_UPDATE_TIMEOUT)
     try:
         while True:
-            logging.info('Data loader is running. Data version %d' % data_provider.data_version())
+            _logger.info('Data loader is running. Data version %d' % data_provider.data_version())
             time.sleep(config.DATA_UPDATE_TIMEOUT * 2)
     except KeyboardInterrupt:
         data_provider.stop_data_update()

@@ -7,6 +7,7 @@ import config
 import localization
 import reminders_storage
 import matches_data_loader
+import reminders_sender
 
 
 def _inline_keyboard(buttons: typing.List[typing.List[typing.Tuple[str, str]]]):
@@ -235,6 +236,10 @@ def main():
 
     logging.info('initializing data loader')
     matches_data_loader.initialize()
+
+    logging.info('initializing RemindersSender')
+    reminders_sender_ = reminders_sender.RemindersSender()
+    reminders_sender_.start()
 
     logging.info('starting bot')
     application = telegram.ext.ApplicationBuilder().token(config.BOT_TOKEN).build()

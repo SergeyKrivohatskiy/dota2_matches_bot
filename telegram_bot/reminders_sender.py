@@ -5,6 +5,7 @@ import config
 import datetime
 import reminders_storage
 import matches_data_loader
+import asyncio
 # import localization TODO
 
 
@@ -18,7 +19,7 @@ class RemindersSender:
         self._stop_event = threading.Event()
         self._check_period: int = check_period
         self._reminder_window = datetime.timedelta(seconds=reminder_window)
-        self._last_reminded_match_start_time = datetime.datetime.now()
+        self._last_reminded_match_start_time = datetime.datetime.now(tz=datetime.timezone.utc)
         self._bot = telegram.Bot(config.BOT_TOKEN)
         self._check_thread = threading.Thread(target=self._check_loop, daemon=True)
 
@@ -26,11 +27,14 @@ class RemindersSender:
         _logger.info('starting reminders sender')
         self._check_thread.start()
 
-    def _check_loop(self):
+    async def _check_loop_async(self):
         while True:
-            self._check_reminders()
+            await self._check_reminders()
             if self._stop_event.wait(self._check_period):
                 break
+
+    def _check_loop(self):
+        asyncio.run(self._check_loop_async())
 
     def stop_check_loop(self):
         if self._stop_event.is_set():
@@ -39,7 +43,7 @@ class RemindersSender:
         self._stop_event.set()
         self._check_thread.join()
 
-    def _check_reminders(self):
+    async def _check_reminders(self):
         _logger.info('checking reminders')
         matches = matches_data_loader.get_matches()
         now = datetime.datetime.now(tz=datetime.timezone.utc)
@@ -57,21 +61,21 @@ class RemindersSender:
 
         for match in matches_to_remind:
             self._last_reminded_match_start_time = max(self._last_reminded_match_start_time, match.start_time)
-            self._remind_about_match(match, now)
+            await self._remind_about_match(match, now)
 
         _logger.info(f'checking reminders finished. {len(matches_to_remind)} new matches processed')
 
-    def _remind_about_match(self, match: matches_data_loader.Dota2Match, now: datetime.datetime):
+    async def _remind_about_match(self, match: matches_data_loader.Dota2Match, now: datetime.datetime):
         match_descriptor = reminders_storage.MatchDescriptor(
-            match.team1.liquipedia_page if match.team1 is not None else None,
-            match.team2.liquipedia_page if match.team2 is not None else None,
-            match.tournament.liquipedia_page)
+            match.team1.name if match.team1 is not None else None,
+            match.team2.name if match.team2 is not None else None,
+            match.tournament.name)
 
         reminders = reminders_storage.storage().get_reminded_chat_ids(match_descriptor)
 
         _logger.info(f'sending {len(reminders)} reminders about match {match_descriptor}')
 
         for chat_id in reminders:
-            self._bot.send_message(
+            await self._bot.send_message(
                 chat_id=chat_id,
                 text='TODO message')

@@ -56,7 +56,7 @@ async def _process_remove_reminders_callbacks(
 def _generate_command_with_options_keyboard(buttons_per_line: int, command: str, options: typing.Dict[str, str]):
     buttons = []
     buttons_line = []
-    for option in options.keys():
+    for option in sorted(options.keys()):
         buttons_line.append((option, f'{command} {option}'))
         if len(buttons_line) == buttons_per_line:
             buttons.append(buttons_line)

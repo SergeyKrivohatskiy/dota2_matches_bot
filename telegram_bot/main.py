@@ -8,6 +8,7 @@ import localization
 import reminders_storage
 import matches_data_loader
 import reminders_sender
+import match_printing
 from chat_settings import get_lang
 
 
@@ -175,57 +176,10 @@ async def settings(update: telegram.Update, context: telegram.ext.ContextTypes.D
     await context.bot.send_message(chat_id=update.effective_chat.id, text='TODO')
 
 
-def _escape(s: str):
-    # TODO better impl
-    chars = ['_', '*', '[', ']', '(', ')', '~', '`', '>', '#', '+', '-', '=', '|', '{', '}', '.', '!']
-    for c in chars:
-        s = s.replace(c, '\\' + c)
-    return s
-
-
-def _streams_str(streams):
-    res = ''
-    for stream in sorted(streams, key=lambda x: x.viewers, reverse=True):
-        res += f'\n[{_escape(stream.channel_name)}](https://www.twitch.tv/{stream.channel_login}): {_escape(stream.title)} ' \
-               f'\\({stream.viewers}\\)'
-    return res
-
-
-def _match_message(update: telegram.Update, match: matches_data_loader.Dota2Match):
-    lang = get_lang(update)
-
-    def team_name(team: matches_data_loader.Dota2Team):
-        if team is None:
-            return localization.get('tbd_team', lang)
-        return f'*{_escape(team.name)}*'
-
-    def score_str(score: typing.Tuple[int, int]):
-        return '||%d:%d||' % score
-
-    def start_time_str(start_time: typing.Optional[datetime.datetime]):
-        # TODO
-        is_live = match.start_time is None
-        if is_live:
-            return 'live'
-        return _escape('TODO time')
-
-    start_time = start_time_str(match.start_time)
-    has_score = match.score is not None
-    score_or_vs = score_str(match.score) if has_score else 'vs'
-    format_str = (' \\(%s\\)' % _escape(match.format)) if match.format is not None else ''
-
-    tournament_str = _escape(match.tournament.name)
-
-    streams_str = ''  # TODO _streams_str(match.streams)
-
-    return f'{team_name(match.team1)} {score_or_vs} {team_name(match.team2)}{format_str} {start_time}\n'\
-           f'{tournament_str}'\
-           f'{streams_str}'
-
-
 async def matches(update: telegram.Update, context: telegram.ext.ContextTypes.DEFAULT_TYPE):
     for match in matches_data_loader.get_matches():
-        await context.bot.send_message(chat_id=update.effective_chat.id, text=_match_message(update, match),
+        await context.bot.send_message(chat_id=update.effective_chat.id,
+                                       text=match_printing.match_message(get_lang(update), match),
                                        parse_mode='MarkdownV2')
 
 

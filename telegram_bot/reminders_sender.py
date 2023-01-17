@@ -6,6 +6,8 @@ import datetime
 import reminders_storage
 import matches_data_loader
 import asyncio
+import match_printing
+import chat_settings
 # import localization TODO
 
 
@@ -78,4 +80,5 @@ class RemindersSender:
         for chat_id in reminders:
             await self._bot.send_message(
                 chat_id=chat_id,
-                text='TODO message')
+                text=match_printing.match_message(chat_settings.get_lang_for_known_chat(chat_id), match),
+                parse_mode='MarkdownV2')

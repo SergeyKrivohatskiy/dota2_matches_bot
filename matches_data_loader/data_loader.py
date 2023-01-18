@@ -93,6 +93,9 @@ def _match_same(old: Dota2Match, new: Dota2Match):
     if not check_teams(old.team2, new.team2):
         return False
 
+    if len(old.streams) > 0 and len(new.streams) == 0:
+        return False
+
     return True
 
 

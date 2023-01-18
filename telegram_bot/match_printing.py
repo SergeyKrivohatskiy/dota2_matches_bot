@@ -19,18 +19,7 @@ def _escape(s: str):
     return s
 
 
-def _get_stream_md_link(stream):
-    return f'[{_escape(stream.channel_name)}](https://www.twitch.tv/{_escape(stream.channel_login)})'
-
-
-def _streams_str(streams):
-    res = ''
-    for stream in sorted(streams, key=lambda x: x.viewers, reverse=True):
-        res += f'\n{_get_stream_md_link(stream)}: {_escape(stream.title)} \\({stream.viewers}\\)'
-    return res
-
-
-def _get_tier_icon(tournament, lang):
+def _get_tier_text(tournament, lang):
     if tournament.tier is None:
         return ''
     try:
@@ -51,13 +40,7 @@ def _get_tier_icon(tournament, lang):
     return ', ' + tier
 
 
-@dataclass(eq=False)
-class MatchMessage:
-    message: str  # Markdown message
-    streams_message: str  # Markdown message
-
-
-def match_message(lang: str, match: matches_data_loader.Dota2Match) -> str:
+def _match_message(lang: str, match: matches_data_loader.Dota2Match) -> str:
     def team_name(team: matches_data_loader.Dota2Team):
         if team is None:
             return localization.get('tbd_team', lang)
@@ -92,14 +75,14 @@ def match_message(lang: str, match: matches_data_loader.Dota2Match) -> str:
     format_str = (' \\(%s\\)' % _escape(match.format)) if match.format is not None else ''
 
     tournament_str = _escape(localization.get('tournament_in_match', lang, name=match.tournament.name))
-    tournament_str += _get_tier_icon(match.tournament, lang)
+    tournament_str += _get_tier_text(match.tournament, lang)
 
     return f'{team_name(match.team1)} {score_or_vs} {team_name(match.team2)}{format_str}\n{start_time}\n' \
            f'{tournament_str}'
 
 
 async def print_match_message(bot: telegram.Bot, chat_id: int, lang: str, match: matches_data_loader.Dota2Match):
-    message = match_message(lang, match)
+    message = _match_message(lang, match)
     if len(match.streams) == 0:
         reply_markup = None
     else:
@@ -114,6 +97,17 @@ async def print_match_message(bot: telegram.Bot, chat_id: int, lang: str, match:
         parse_mode='MarkdownV2')
 
 
+def _get_stream_md_link(stream):
+    return f'[{_escape(stream.channel_name)}](https://www.twitch.tv/{_escape(stream.channel_login)})'
+
+
+def _streams_str(streams):
+    res = ''
+    for stream in sorted(streams, key=lambda x: x.viewers, reverse=True):
+        res += f'\n{_get_stream_md_link(stream)}: {_escape(stream.title)} \\({stream.viewers}\\)'
+    return res
+
+
 async def print_match_streams(bot: telegram.Bot, chat_id: int, lang: str, match: matches_data_loader.Dota2Match):
     assert(len(match.streams) != 0)
     await bot.send_message(
@@ -126,17 +120,20 @@ async def print_match_streams(bot: telegram.Bot, chat_id: int, lang: str, match:
 def _run_simple_test():
     match = matches_data_loader.Dota2Match(matches_data_loader.Dota2Team('team name 1', None, 'liq_page', 'icon'),
                                            None,
-                                           matches_data_loader.TournamentInfo('tournament_name', 'liq_page', 1,
+                                           matches_data_loader.TournamentInfo('tournament_name', 'liq_page', 'Tier 1',
                                                                               '12 - 13', 1234, 21, 'EU'),
                                            [],
                                            (1, 0),
                                            'Bo5',
                                            datetime.datetime.now(tz=datetime.timezone.utc) -
-                                           datetime.timedelta(seconds=421))
+                                           datetime.timedelta(seconds=421),
+                                           1)
 
-    print(match_message('ru', match))
+    print(_match_message('ru', match))
     print()
-    print(match_message('en', match))
+    print(_match_message('en', match))
+    print()
+    print(_streams_str(match.streams))
 
 
 if __name__ == '__main__':

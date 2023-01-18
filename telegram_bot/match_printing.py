@@ -47,6 +47,8 @@ def _team_name(team: matches_data_loader.Dota2Team, lang: str):
 
 
 def _score_str(score: typing.Tuple[int, int]):
+    if score == (0, 0):
+        return '0:0'
     return '||%d:%d||' % score
 
 

@@ -1,4 +1,3 @@
-import datetime
 import logging
 import typing
 import telegram
@@ -47,8 +46,8 @@ async def _process_remove_reminders_callbacks(
         removed = True
 
     if removed:
-        await context.bot.send_message(
-            chat_id=update.effective_chat.id,
+        await context.bot.answer_callback_query(
+            callback_query_id=update.callback_query.id,
             text=localization.get('removed_reminder', get_lang(update)))
 
     return removed
@@ -76,6 +75,7 @@ async def _process_follow_callbacks(update: telegram.Update, context: telegram.e
         rs.add_all_reminder(str(update.effective_chat.id))
         followed = True
     elif update.callback_query.data == 'follow_team':
+        await context.bot.answer_callback_query(callback_query_id=update.callback_query.id)
         await context.bot.send_message(
             chat_id=update.effective_chat.id,
             text=localization.get('follow_team_select', get_lang(update)),
@@ -83,6 +83,7 @@ async def _process_follow_callbacks(update: telegram.Update, context: telegram.e
                 3, 'follow_team', matches_data_loader.get_teams()))
         return True
     elif update.callback_query.data == 'follow_tournament':
+        await context.bot.answer_callback_query(callback_query_id=update.callback_query.id)
         await context.bot.send_message(
             chat_id=update.effective_chat.id,
             text=localization.get('follow_tournament_select', get_lang(update)),
@@ -101,8 +102,8 @@ async def _process_follow_callbacks(update: telegram.Update, context: telegram.e
         followed = True
 
     if followed:
-        await context.bot.send_message(
-            chat_id=update.effective_chat.id,
+        await context.bot.answer_callback_query(
+            callback_query_id=update.callback_query.id,
             text=localization.get('added_reminder', get_lang(update)))
 
     return followed
@@ -119,10 +120,9 @@ async def callback_query_handle(update: telegram.Update, context: telegram.ext.C
         match_id = int(update.callback_query.data[len('show_streams '):])
         match = next((m for m in matches_data_loader.get_matches() if m.id == match_id), None)
         if match is None:
-            await context.bot.send_message(
-                chat_id=update.effective_chat.id,
-                text=localization.get('match_not_found', get_lang(update))
-            )
+            await context.bot.answer_callback_query(
+                callback_query_id=update.callback_query.id,
+                text=localization.get('match_not_found', get_lang(update)))
             return
         await match_printing.print_match_streams(context.bot, update.effective_chat.id, get_lang(update), match)
         return

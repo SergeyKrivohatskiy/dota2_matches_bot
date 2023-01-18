@@ -146,7 +146,7 @@ class RemindersStorage:
         with self._lock:
             self._check_chat_exists(chat_id)
             _logger.info(f'reporting {len(self._chat_reminders[chat_id])} reminders for user {chat_id}')
-            return self._chat_reminders[chat_id]
+            return self._chat_reminders[chat_id].copy()
 
 
 _def_storage = RemindersStorage()

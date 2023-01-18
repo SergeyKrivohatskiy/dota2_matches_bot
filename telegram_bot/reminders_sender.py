@@ -78,7 +78,5 @@ class RemindersSender:
         _logger.info(f'sending {len(reminders)} reminders about match {match_descriptor}')
 
         for chat_id in reminders:
-            await self._bot.send_message(
-                chat_id=chat_id,
-                text=match_printing.match_message(chat_settings.get_lang_for_known_chat(chat_id), match),
-                parse_mode='MarkdownV2')
+            await match_printing.print_match_message(
+                self._bot, int(chat_id), chat_settings.get_lang_for_known_chat(chat_id), match)

@@ -1,9 +1,11 @@
+import telegram
 import matches_data_loader
 import localization
 import typing
 import datetime
 import logging
 import re
+from dataclasses import dataclass
 
 
 _logger = logging.getLogger('match_printing')
@@ -24,7 +26,7 @@ def _get_stream_md_link(stream):
 def _streams_str(streams):
     res = ''
     for stream in sorted(streams, key=lambda x: x.viewers, reverse=True):
-        res += f'\n{_get_stream_md_link(stream)}): {_escape(stream.title)} \\({stream.viewers}\\)'
+        res += f'\n{_get_stream_md_link(stream)}: {_escape(stream.title)} \\({stream.viewers}\\)'
     return res
 
 
@@ -49,7 +51,13 @@ def _get_tier_icon(tournament, lang):
     return ', ' + tier
 
 
-def match_message(lang: str, match: matches_data_loader.Dota2Match):
+@dataclass(eq=False)
+class MatchMessage:
+    message: str  # Markdown message
+    streams_message: str  # Markdown message
+
+
+def match_message(lang: str, match: matches_data_loader.Dota2Match) -> str:
     def team_name(team: matches_data_loader.Dota2Team):
         if team is None:
             return localization.get('tbd_team', lang)
@@ -86,12 +94,33 @@ def match_message(lang: str, match: matches_data_loader.Dota2Match):
     tournament_str = _escape(localization.get('tournament_in_match', lang, name=match.tournament.name))
     tournament_str += _get_tier_icon(match.tournament, lang)
 
-    streams_str = ''  # TODO _streams_str(match.streams)
+    return f'{team_name(match.team1)} {score_or_vs} {team_name(match.team2)}{format_str}\n{start_time}\n' \
+           f'{tournament_str}'
 
-    return f'{team_name(match.team1)} {score_or_vs} {team_name(match.team2)}{format_str}\n' \
-           f'{start_time}\n'\
-           f'{tournament_str}'\
-           f'{streams_str}'
+
+async def print_match_message(bot: telegram.Bot, chat_id: int, lang: str, match: matches_data_loader.Dota2Match):
+    message = match_message(lang, match)
+    if len(match.streams) == 0:
+        reply_markup = None
+    else:
+        reply_markup = telegram.InlineKeyboardMarkup([[telegram.InlineKeyboardButton(
+            localization.get('show_streams', lang, count=len(match.streams)),
+            callback_data=f'show_streams {match.id}'
+        )]])
+    await bot.send_message(
+        chat_id=chat_id,
+        text=message,
+        reply_markup=reply_markup,
+        parse_mode='MarkdownV2')
+
+
+async def print_match_streams(bot: telegram.Bot, chat_id: int, lang: str, match: matches_data_loader.Dota2Match):
+    assert(len(match.streams) != 0)
+    await bot.send_message(
+        chat_id=chat_id,
+        text=_streams_str(match.streams),
+        disable_web_page_preview=True,
+        parse_mode='MarkdownV2')
 
 
 def _run_simple_test():

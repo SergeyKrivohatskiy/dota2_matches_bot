@@ -40,6 +40,7 @@ class Dota2Match:
     score: typing.Optional[typing.Tuple[int, int]]  # only present for games in progress
     format: typing.Optional[str]  # None means unknown
     start_time: typing.Optional[datetime.datetime]  # None means game is in progress
+    id: int
 
 
 @dataclass(eq=False)
@@ -71,11 +72,43 @@ def _name_to_id_map(liquipedia_items: typing.Union[typing.List[liquipedia_dota_a
     return result
 
 
+def _match_same(old: Dota2Match, new: Dota2Match):
+    if old.format != new.format:
+        return False
+    if old.start_time != new.start_time:
+        return False
+    if old.tournament.liquipedia_page != new.tournament.liquipedia_page:
+        return False
+
+    def check_teams(old_team: Dota2Team, new_team: Dota2Team):
+        if old_team is not None:
+            if new_team is None:
+                return False
+            if old_team.liquipedia_page != new_team.liquipedia_page:
+                return False
+            return True
+
+    if not check_teams(old.team1, new.team1):
+        return False
+    if not check_teams(old.team2, new.team2):
+        return False
+
+    return True
+
+
+def _match_match_ids(data, new_data):
+    for m in data.upcoming_matches:
+        for new_m in new_data.upcoming_matches:
+            if _match_same(m, new_m):
+                new_m.id = m.id
+
+
 class DataLoader:
     def __init__(self, data_update_period=config.DATA_UPDATE_TIMEOUT):
         self._dota2_api = liquipedia_dota_api.Dota2Api(app_name=config.APP_NAME)
         self._twitch_streams_searcher = twitch_streams_search.TwitchDota2Api()
         self._data: _Data = _Data([], {}, {})
+        self._match_id = 0
         self._data_version = 0
         self._data_lock = threading.Lock()
         self._data_update_stop_event = threading.Event()
@@ -161,7 +194,9 @@ class DataLoader:
                     streams_info,
                     match.score,
                     match.format,
-                    match.start_time))
+                    match.start_time,
+                    self._match_id))
+                self._match_id += 1
 
             self._update_data(_Data(new_matches, _name_to_id_map(teams), _name_to_id_map(tournaments)))
         except liquipedia_dota_api.RequestsException as e:
@@ -190,9 +225,10 @@ class DataLoader:
         return self._twitch_streams_searcher.find_match_streams(
             match.team1.name, match.team2.name, match.tournament.name)
 
-    def _update_data(self, new_matches: _Data):
+    def _update_data(self, new_data: _Data):
         with self._data_lock:
-            self._data = new_matches
+            _match_match_ids(self._data, new_data)
+            self._data = new_data
             self._data_version += 1
             _logger.info('Data updating finished. %d matches saved, %d teams and %d tournaments. Version %d' %
                          (len(self._data.upcoming_matches),

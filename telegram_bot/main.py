@@ -115,6 +115,17 @@ async def callback_query_handle(update: telegram.Update, context: telegram.ext.C
         return
     if await _process_follow_callbacks(update, context):
         return
+    if update.callback_query.data.startswith('show_streams '):
+        match_id = int(update.callback_query.data[len('show_streams '):])
+        match = next((m for m in matches_data_loader.get_matches() if m.id == match_id), None)
+        if match is None:
+            await context.bot.send_message(
+                chat_id=update.effective_chat.id,
+                text=localization.get('match_not_found', get_lang(update))
+            )
+            return
+        await match_printing.print_match_streams(context.bot, update.effective_chat.id, get_lang(update), match)
+        return
 
     logging.warning(f'unknown callback query {update.callback_query.data}')
 
@@ -178,9 +189,7 @@ async def settings(update: telegram.Update, context: telegram.ext.ContextTypes.D
 
 async def matches(update: telegram.Update, context: telegram.ext.ContextTypes.DEFAULT_TYPE):
     for match in matches_data_loader.get_matches():
-        await context.bot.send_message(chat_id=update.effective_chat.id,
-                                       text=match_printing.match_message(get_lang(update), match),
-                                       parse_mode='MarkdownV2')
+        await match_printing.print_match_message(context.bot, update.effective_chat.id, get_lang(update), match)
 
 
 def main():

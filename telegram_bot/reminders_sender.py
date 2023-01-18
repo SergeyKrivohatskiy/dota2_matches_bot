@@ -22,7 +22,7 @@ class RemindersSender:
         self._check_period: int = check_period
         self._reminder_window = datetime.timedelta(seconds=reminder_window)
         self._last_reminded_match_start_time = datetime.datetime.now(tz=datetime.timezone.utc)
-        self._bot = telegram.Bot(config.BOT_TOKEN)
+        self._bot = telegram.Bot(config.bot_token())
         self._check_thread = threading.Thread(target=self._check_loop, daemon=True)
 
     def start(self):

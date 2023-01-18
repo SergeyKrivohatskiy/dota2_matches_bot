@@ -215,12 +215,15 @@ def main():
     logging.info('initializing data loader')
     matches_data_loader.initialize()
 
+    logging.info('initializing reminders storage')
+    reminders_storage.initialize()
+
     logging.info('initializing RemindersSender')
     reminders_sender_ = reminders_sender.RemindersSender()
     reminders_sender_.start()
 
     logging.info('starting bot')
-    application = telegram.ext.ApplicationBuilder().token(config.BOT_TOKEN).build()
+    application = telegram.ext.ApplicationBuilder().token(config.bot_token()).build()
 
     application.add_handler(telegram.ext.CallbackQueryHandler(callback_query_handle))
     application.add_handler(telegram.ext.CommandHandler(_checked_command('start'), start))

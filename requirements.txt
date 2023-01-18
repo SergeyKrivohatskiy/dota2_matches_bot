@@ -10,3 +10,4 @@ langcodes
 language_data
 
 python-telegram-bot
+peewee

@@ -1,6 +1,9 @@
 {
-  "dota2": "Dota 2",
-  "start_message": "TODO",
+  "follow_cmd_description": "add notifications for upcoming matches",
+  "following_cmd_description": "show or remove notifications for upcoming matches",
+  "matches_cmd_description": "show upcoming matches",
+  "start_message": "Hi\\!\nThis bot tracks upcoming Dota 2 matches\\.\n\nYou can *get a list of upcoming matches*, using /matches command\\. For every game you'll see participating teams, start time, current score and tournament information\\.\n\nAlso, by using /follow and /following commands *you can configure notifications for upcoming matches*. For example, you can follow your favorite team or a tournament, you are interested in\\.\n\nPlease write to the [bot support group](https://t\\.me/DotaUpcomingMatchesBotSupportEN) if you have any issues \\(or ideas\\)\\.",
+  "settings_message": "there are no settings yet",
   "tbd_team": "TBD",
   "reminders_count": "You don't follow any team or tournament. Use /follow to add reminders for upcoming matches. | You have one active reminder: | You have {count} active reminders:",
   "remove_all_reminders": "remove all reminders",

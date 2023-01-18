@@ -17,13 +17,25 @@ def _inline_keyboard(buttons: typing.List[typing.List[typing.Tuple[str, str]]]):
          for buttons_row in buttons])
 
 
+_ALL_COMMANDS_NO_UTILITY = ['follow', 'following', 'matches']
+_ALL_COMMANDS = ['start', 'help', 'settings'] + _ALL_COMMANDS_NO_UTILITY
+
+
+def _checked_command(command):
+    assert(command in _ALL_COMMANDS)
+    return command
+
+
 async def start(update: telegram.Update, context: telegram.ext.ContextTypes.DEFAULT_TYPE):
     logging.info(f'start called by {update.effective_user.name}')
+    for lang in localization.all_locales():
+        await context.bot.setMyCommands(
+            [(command, localization.get(command + '_cmd_description', lang))
+             for command in _ALL_COMMANDS_NO_UTILITY],
+            language_code=lang)
     await context.bot.send_message(chat_id=update.effective_chat.id,
                                    text=localization.get('start_message', get_lang(update)),
-                                   parse_mode='MarkdownV2',
-                                   reply_markup=_inline_keyboard([[('text1', 'data1'), ('text2', 'data2')],
-                                                                  [('text3', 'data3')]]))
+                                   parse_mode='MarkdownV2')
 
 
 async def _process_remove_reminders_callbacks(
@@ -131,7 +143,7 @@ async def callback_query_handle(update: telegram.Update, context: telegram.ext.C
 
 
 async def help_handler(update: telegram.Update, context: telegram.ext.ContextTypes.DEFAULT_TYPE):
-    await context.bot.send_message(chat_id=update.effective_chat.id, text='TODO')
+    await start(update, context)  # TODO actual help?
 
 
 async def following(update: telegram.Update, context: telegram.ext.ContextTypes.DEFAULT_TYPE):
@@ -184,7 +196,9 @@ async def follow(update: telegram.Update, context: telegram.ext.ContextTypes.DEF
 
 
 async def settings(update: telegram.Update, context: telegram.ext.ContextTypes.DEFAULT_TYPE):
-    await context.bot.send_message(chat_id=update.effective_chat.id, text='TODO')
+    await context.bot.send_message(
+        chat_id=update.effective_chat.id,
+        text=localization.get('settings_message', get_lang(update)))
 
 
 async def matches(update: telegram.Update, context: telegram.ext.ContextTypes.DEFAULT_TYPE):
@@ -209,12 +223,12 @@ def main():
     application = telegram.ext.ApplicationBuilder().token(config.BOT_TOKEN).build()
 
     application.add_handler(telegram.ext.CallbackQueryHandler(callback_query_handle))
-    application.add_handler(telegram.ext.CommandHandler('start', start))
-    application.add_handler(telegram.ext.CommandHandler('help', help_handler))
-    application.add_handler(telegram.ext.CommandHandler('following', following))
-    application.add_handler(telegram.ext.CommandHandler('follow', follow))
-    application.add_handler(telegram.ext.CommandHandler('settings', settings))
-    application.add_handler(telegram.ext.CommandHandler('matches', matches))
+    application.add_handler(telegram.ext.CommandHandler(_checked_command('start'), start))
+    application.add_handler(telegram.ext.CommandHandler(_checked_command('help'), help_handler))
+    application.add_handler(telegram.ext.CommandHandler(_checked_command('following'), following))
+    application.add_handler(telegram.ext.CommandHandler(_checked_command('follow'), follow))
+    application.add_handler(telegram.ext.CommandHandler(_checked_command('settings'), settings))
+    application.add_handler(telegram.ext.CommandHandler(_checked_command('matches'), matches))
 
     application.run_polling()
 

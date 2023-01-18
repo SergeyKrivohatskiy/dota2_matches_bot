@@ -5,7 +5,7 @@ import typing
 import datetime
 import logging
 import re
-from dataclasses import dataclass
+import config
 
 
 _logger = logging.getLogger('match_printing')
@@ -79,13 +79,18 @@ def _match_message(lang: str, match: matches_data_loader.Dota2Match) -> str:
                                                 hours=hours_before_start))
 
     start_time = start_time_str(match.start_time)
-    format_str = (' \\(%s\\)' % _escape(match.format)) if match.format is not None else ''
 
     tournament_str = _escape(localization.get('tournament_in_match', lang, name=match.tournament.name))
     tournament_str += _get_tier_text(match.tournament, lang)
 
-    return f'{_team_vs_team_string(match, lang)}{format_str}\n{start_time}\n' \
-           f'{tournament_str}'
+    format_str = (' \\(%s\\)' % _escape(match.format)) if match.format is not None else ''
+
+    team_vs_team = _team_vs_team_string(match, lang) + format_str
+    match_prefix = localization.get('match_prefix', lang) + ' '
+    if len(team_vs_team) <= config.LINE_WIDTH < len(team_vs_team) + len(match_prefix):
+        match_prefix = ''  # don't use prefix if it makes line longer than LINE_WIDTH
+
+    return f'{match_prefix}{team_vs_team}\n{start_time}\n{tournament_str}'
 
 
 async def print_match_message(bot: telegram.Bot, chat_id: int, lang: str, match: matches_data_loader.Dota2Match):

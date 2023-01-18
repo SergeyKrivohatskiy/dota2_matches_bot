@@ -26,5 +26,7 @@
   "tier_3_tournament": "tier 3 \uD83E\uDD49",
   "tier_4_tournament": "tier 4",
   "show_streams": "none | show live stream | show {count} live streams",
-  "match_not_found": "specified match is not found. Please run /matches again"
+  "match_not_found": "specified match is not found. Please run /matches again",
+  "viewers_count_prefix": "viewers:",
+  "match_streams": "*Live streams* for match {team_vs_team}:"
 }

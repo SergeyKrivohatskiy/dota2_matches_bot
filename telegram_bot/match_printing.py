@@ -40,14 +40,23 @@ def _get_tier_text(tournament, lang):
     return ', ' + tier
 
 
-def _match_message(lang: str, match: matches_data_loader.Dota2Match) -> str:
-    def team_name(team: matches_data_loader.Dota2Team):
-        if team is None:
-            return localization.get('tbd_team', lang)
-        return f'*{_escape(team.name)}*'
+def _team_name(team: matches_data_loader.Dota2Team, lang: str):
+    if team is None:
+        return localization.get('tbd_team', lang)
+    return f'*{_escape(team.name)}*'
 
-    def score_str(score: typing.Tuple[int, int]):
-        return '||%d:%d||' % score
+
+def _score_str(score: typing.Tuple[int, int]):
+    return '||%d:%d||' % score
+
+
+def _team_vs_team_string(match: matches_data_loader.Dota2Match, lang: str) -> str:
+    has_score = match.score is not None
+    score_or_vs = _score_str(match.score) if has_score else 'vs'
+    return f'{_team_name(match.team1, lang)} {score_or_vs} {_team_name(match.team2, lang)}'
+
+
+def _match_message(lang: str, match: matches_data_loader.Dota2Match) -> str:
 
     def start_time_str(start_time: typing.Optional[datetime.datetime]):
         is_live = match.start_time is None
@@ -70,14 +79,12 @@ def _match_message(lang: str, match: matches_data_loader.Dota2Match) -> str:
                                                 hours=hours_before_start))
 
     start_time = start_time_str(match.start_time)
-    has_score = match.score is not None
-    score_or_vs = score_str(match.score) if has_score else 'vs'
     format_str = (' \\(%s\\)' % _escape(match.format)) if match.format is not None else ''
 
     tournament_str = _escape(localization.get('tournament_in_match', lang, name=match.tournament.name))
     tournament_str += _get_tier_text(match.tournament, lang)
 
-    return f'{team_name(match.team1)} {score_or_vs} {team_name(match.team2)}{format_str}\n{start_time}\n' \
+    return f'{_team_vs_team_string(match, lang)}{format_str}\n{start_time}\n' \
            f'{tournament_str}'
 
 
@@ -98,21 +105,23 @@ async def print_match_message(bot: telegram.Bot, chat_id: int, lang: str, match:
 
 
 def _get_stream_md_link(stream):
-    return f'[{_escape(stream.channel_name)}](https://www.twitch.tv/{_escape(stream.channel_login)})'
+    return f'[twitch\\.tv/{_escape(stream.channel_name)}](https://www.twitch.tv/{_escape(stream.channel_login)})'
 
 
-def _streams_str(streams):
+def _streams_str(streams, lang: str):
     res = ''
+    viewers = localization.get('viewers_count_prefix', lang)
     for stream in sorted(streams, key=lambda x: x.viewers, reverse=True):
-        res += f'\n{_get_stream_md_link(stream)}: {_escape(stream.title)} \\({stream.viewers}\\)'
+        res += f'\n{_get_stream_md_link(stream)}: {_escape(stream.title)} \\({viewers} {stream.viewers}\\)'
     return res
 
 
 async def print_match_streams(bot: telegram.Bot, chat_id: int, lang: str, match: matches_data_loader.Dota2Match):
     assert(len(match.streams) != 0)
+    header = localization.get('match_streams', lang, team_vs_team=_team_vs_team_string(match, lang))
     await bot.send_message(
         chat_id=chat_id,
-        text=_streams_str(match.streams),
+        text=header + '\n' + _streams_str(match.streams, lang),
         disable_web_page_preview=True,
         parse_mode='MarkdownV2')
 
@@ -133,7 +142,7 @@ def _run_simple_test():
     print()
     print(_match_message('en', match))
     print()
-    print(_streams_str(match.streams))
+    print(_streams_str(match.streams, 'en'))
 
 
 if __name__ == '__main__':

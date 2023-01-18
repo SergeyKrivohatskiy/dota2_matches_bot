@@ -26,5 +26,7 @@
   "tier_3_tournament": "tier 3 \uD83E\uDD49",
   "tier_4_tournament": "tier 4",
   "show_streams": "none | показать найденную трансляцию | показать {count} найденных трансляции",
-  "match_not_found": "матч не найден. Используйте /matches чтобы посмотреть список матчей"
+  "match_not_found": "матч не найден. Используйте /matches чтобы посмотреть список матчей",
+  "viewers_count_prefix": "зрителей:",
+  "match_streams": "*Трансляции* для матча {team_vs_team}:"
 }

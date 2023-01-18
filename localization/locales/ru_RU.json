@@ -17,14 +17,14 @@
   "follow_team_select": "Пожалуйста выберите какую команду отслеживать:",
   "follow_tournament_select": "Пожалуйста выберите какой турнир отслеживать:",
   "match_live": "\uD83D\uDD34 матч начался",
-  "match_live_with_duration": "\uD83D\uDD34 матч идёт уже {minutes} минут",
+  "match_live_with_duration": "\uD83D\uDD34 матч начался {minutes} минут назад",
   "match_starts_soon": "начнётся через {minutes} минут",
-  "match_starts_in": "начнётся через {hours}:{minutes}",
+  "match_starts_in": "начнётся через {hours}:{minutes:02}",
   "tournament_in_match": "Турнир: \"{name}\"",
   "tier_1_tournament": "tier 1 \uD83E\uDD47",
   "tier_2_tournament": "tier 2 \uD83E\uDD48",
   "tier_3_tournament": "tier 3 \uD83E\uDD49",
   "tier_4_tournament": "tier 4",
-  "show_streams": "none | показать найденную трансляцию | показать {count} найденных трансляций",
+  "show_streams": "none | показать найденную трансляцию | показать {count} найденных трансляции",
   "match_not_found": "матч не найден. Используйте /matches чтобы посмотреть список матчей"
 }

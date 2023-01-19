@@ -1,8 +1,12 @@
+import config
+
+import sys
+sys.path.append(config.ROOT_DIR)  # tmp solution. TODO change project structure
+
 import logging
 import typing
 import telegram
 import telegram.ext
-import config
 import localization
 import reminders_storage
 import matches_data_loader

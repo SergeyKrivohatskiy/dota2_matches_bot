@@ -50,6 +50,14 @@ class ChatReminder:
         return hash((self.type_, self.value))
 
 
+@dataclass()
+class Stats:
+    unique_chats: int
+    active_team_reminders: int
+    active_tournament_reminders: int
+    active_all_reminders: int
+
+
 class RemindersStorage:
     def __init__(self):
         _logger.info('connecting db')
@@ -159,8 +167,18 @@ class RemindersStorage:
                 result.add(ChatReminder(type_=reminder.type, value=reminder.value))
             return result
 
+    def get_stats(self) -> Stats:
+        with self._lock:
+            return Stats(
+                unique_chats=_Chat.select().count(),
+                active_all_reminders=_Reminder.select().where(
+                    (_Reminder.type == 'all') & (_Reminder.value.is_null())).count(),
+                active_team_reminders=_Reminder.select().where(_Reminder.type == 'team').count(),
+                active_tournament_reminders=_Reminder.select().where(_Reminder.type == 'tournament').count()
+            )
 
-_def_storage = None
+
+_def_storage: typing.Optional[RemindersStorage] = None
 
 
 def storage() -> RemindersStorage:

@@ -28,3 +28,9 @@ def get_tournaments() -> typing.Dict[str, str]:
     global _data_loader
     assert(_data_loader is not None)
     return _data_loader.data().tournament_names_to_id
+
+
+def get_data_version() -> int:
+    global _data_loader
+    assert(_data_loader is not None)
+    return _data_loader.data_version()

@@ -3,6 +3,7 @@ import config
 import sys
 sys.path.append(config.ROOT_DIR)  # tmp solution. TODO change project structure
 
+import functools
 import logging
 import typing
 import telegram
@@ -22,7 +23,7 @@ def _inline_keyboard(buttons: typing.List[typing.List[typing.Tuple[str, str]]]):
 
 
 _ALL_COMMANDS_NO_UTILITY = ['follow', 'following', 'matches']
-_ALL_COMMANDS = ['start', 'help', 'settings'] + _ALL_COMMANDS_NO_UTILITY
+_ALL_COMMANDS = ['start', 'help', 'settings', 'stats'] + _ALL_COMMANDS_NO_UTILITY
 
 
 def _checked_command(command):
@@ -30,8 +31,25 @@ def _checked_command(command):
     return command
 
 
+def admin_only_command():
+    def wrapper(command):
+        @functools.wraps(command)
+        async def wrapped(update: telegram.Update, context: telegram.ext.ContextTypes.DEFAULT_TYPE):
+            if update.effective_user.id != config.ADMIN_USER_ID:
+                logging.warning(f'User {update.effective_user.id}, {update.effective_user.name} tried to access admin'
+                                f'command')
+                return
+            if update.effective_chat.id != config.ADMIN_USER_ID:
+                logging.warning(f'User {update.effective_user.name}, in chat {update.effective_chat.id} '
+                                f'tried to access admin command')
+                return
+            return await command(update, context)
+        return wrapped
+    return wrapper
+
+
 async def start(update: telegram.Update, context: telegram.ext.ContextTypes.DEFAULT_TYPE):
-    logging.info(f'start called by {update.effective_user.name}')
+    logging.info(f'start called by {update.effective_user.id}')
     for lang in localization.all_locales():
         await context.bot.setMyCommands(
             [(command, localization.get(command + '_cmd_description', lang))
@@ -210,6 +228,19 @@ async def matches(update: telegram.Update, context: telegram.ext.ContextTypes.DE
         await match_printing.print_match_message(context.bot, update.effective_chat.id, get_lang(update), match)
 
 
+@admin_only_command()
+async def stats(update: telegram.Update, context: telegram.ext.ContextTypes.DEFAULT_TYPE):
+    rs_stats = reminders_storage.storage().get_stats()
+    message = f'Statistics:\n\n' \
+              f'Current data version is {matches_data_loader.get_data_version()}\n' \
+              f'There are {rs_stats.unique_chats} unique chats, where reminders were set, ' \
+              f'with {rs_stats.active_all_reminders} active all reminders, {rs_stats.active_team_reminders} active ' \
+              f'team reminders and {rs_stats.active_tournament_reminders} active tournament reminders. '
+    await context.bot.send_message(
+        chat_id=update.effective_chat.id,
+        text=message)
+
+
 def main():
     logging.basicConfig(
         format='%(asctime)s - %(levelname)s - %(name)s - %(message)s',
@@ -236,6 +267,7 @@ def main():
     application.add_handler(telegram.ext.CommandHandler(_checked_command('follow'), follow))
     application.add_handler(telegram.ext.CommandHandler(_checked_command('settings'), settings))
     application.add_handler(telegram.ext.CommandHandler(_checked_command('matches'), matches))
+    application.add_handler(telegram.ext.CommandHandler(_checked_command('stats'), stats))
 
     application.run_polling()
 

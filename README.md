@@ -29,3 +29,6 @@ export ADMIN_USER_ID=0
 python -m pip install -r requirements
 python telegram_bot/main.py
 ```
+
+# Feedback and pull request
+Feel free to submit feature requests or suggestions. Pull requests are welcome =)

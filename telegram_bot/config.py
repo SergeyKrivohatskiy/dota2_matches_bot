@@ -12,6 +12,6 @@ REMINDERS_WINDOW_SECONDS = 600  # remind [10, 0] minutes before match
 
 REMINDERS_STORAGE_FILE = os.path.join(os.path.dirname(os.path.realpath(__file__)), 'reminders.db')
 
-ADMIN_USER_ID = 272689159
+ADMIN_USER_ID = int(os.environ['ADMIN_USER_ID'])
 
 LINE_WIDTH = 45

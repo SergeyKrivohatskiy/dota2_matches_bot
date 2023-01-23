@@ -25,7 +25,7 @@ class _BaseModel(peewee.Model):
 
 
 class _Chat(_BaseModel):
-    id = peewee.CharField(unique=True)
+    id = peewee.CharField(unique=True, primary_key=True)
 
 
 class _Reminder(_BaseModel):

@@ -299,6 +299,7 @@ async def stats(update: telegram.Update, context: telegram.ext.ContextTypes.DEFA
 
 def main():
     logging.basicConfig(
+        filename=config.LOG_FILE,
         format='%(asctime)s - %(levelname)s - %(name)s - %(message)s',
         level=logging.INFO
     )

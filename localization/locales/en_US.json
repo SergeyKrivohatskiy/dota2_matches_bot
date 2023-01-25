@@ -22,7 +22,7 @@
   "match_live": "\uD83D\uDD34 match is live",
   "match_live_with_duration": "\uD83D\uDD34 match is live for {minutes} minutes",
   "match_starts_soon": "starts in {minutes} minutes",
-  "match_starts_in": "starts in {hours}:{minutes}",
+  "match_starts_in": "starts in {hours}:{minutes:02}",
   "tournament_in_match": "Tournament: \"{name}\"",
   "tier_1_tournament": "tier 1 \uD83E\uDD47",
   "tier_2_tournament": "tier 2 \uD83E\uDD48",

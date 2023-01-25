@@ -231,11 +231,16 @@ async def matches(update: telegram.Update, context: telegram.ext.ContextTypes.DE
 @admin_only_command()
 async def stats(update: telegram.Update, context: telegram.ext.ContextTypes.DEFAULT_TYPE):
     rs_stats = reminders_storage.storage().get_stats()
+    top_teams = '\n'.join([f'{idx + 1}) {name_count[1]}\t- {name_count[0]}'
+                           for idx, name_count in enumerate(rs_stats.top_followed_teams)])
+    top_tournaments = '\n'.join([f'{idx + 1}) {name_count[1]}\t- {name_count[0]}'
+                                 for idx, name_count in enumerate(rs_stats.top_followed_tournaments)])
     message = f'Statistics:\n\n' \
               f'Current data version is {matches_data_loader.get_data_version()}\n' \
               f'There are {rs_stats.unique_chats} unique chats, where reminders were set, ' \
               f'with {rs_stats.active_all_reminders} active all reminders, {rs_stats.active_team_reminders} active ' \
-              f'team reminders and {rs_stats.active_tournament_reminders} active tournament reminders. '
+              f'team reminders and {rs_stats.active_tournament_reminders} active tournament reminders.\n\n' \
+              f'Top followed teams:\n{top_teams}\n\nTop followed tournaments:\n{top_tournaments}'
     await context.bot.send_message(
         chat_id=update.effective_chat.id,
         text=message)

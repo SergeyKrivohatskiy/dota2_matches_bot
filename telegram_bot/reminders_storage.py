@@ -56,6 +56,8 @@ class Stats:
     active_team_reminders: int
     active_tournament_reminders: int
     active_all_reminders: int
+    top_followed_teams: typing.List[typing.Tuple[str, int]]  # name to count (top N entries)
+    top_followed_tournaments: typing.List[typing.Tuple[str, int]]  # name to count (top N entries)
 
 
 class RemindersStorage:
@@ -167,6 +169,17 @@ class RemindersStorage:
                 result.add(ChatReminder(type_=reminder.type, value=reminder.value))
             return result
 
+    @staticmethod
+    def _get_top(what: typing.Literal['team', 'tournament']):
+        q = _Reminder.select(_Reminder.value, peewee.fn.Count(_Reminder.id).alias('count')) \
+            .where(_Reminder.type == what) \
+            .group_by(_Reminder.value) \
+            .order_by(peewee.fn.Count(_Reminder.id).desc())
+        result = []
+        for r in q:
+            result.append((r.value, r.count))
+        return result
+
     def get_stats(self) -> Stats:
         with self._lock:
             return Stats(
@@ -174,7 +187,9 @@ class RemindersStorage:
                 active_all_reminders=_Reminder.select().where(
                     (_Reminder.type == 'all') & (_Reminder.value.is_null())).count(),
                 active_team_reminders=_Reminder.select().where(_Reminder.type == 'team').count(),
-                active_tournament_reminders=_Reminder.select().where(_Reminder.type == 'tournament').count()
+                active_tournament_reminders=_Reminder.select().where(_Reminder.type == 'tournament').count(),
+                top_followed_teams=self._get_top('team'),
+                top_followed_tournaments=self._get_top('tournament')
             )
 
 

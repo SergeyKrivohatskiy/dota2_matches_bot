@@ -50,8 +50,7 @@ class SettingsStorage:
                 _ChatSetting.get_or_create(chat_id=chat_id, setting_key=key, defaults={'setting_value': value})
             if created:
                 return
-            chat_setting.setting_value = value
-            chat_setting.update().execute()
+            chat_setting.update(setting_value=value).execute()
 
 
 _def_storage = SettingsStorage()
@@ -69,6 +68,10 @@ def get_lang_for_known_chat(chat_id):
     if lang is None:
         _logger.warning(f'there is no lang setting for chat {chat_id}, get lang with update should be called first')
     return lang
+
+
+def set_chat_lang(chat_id, lang: str):
+    storage().set(chat_id, _LANG_KEY, lang)
 
 
 def get_lang(update: telegram.Update):

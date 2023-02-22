@@ -19,3 +19,17 @@ SETTINGS_STORAGE_FILE = os.path.join(os.path.dirname(os.path.realpath(__file__))
 ADMIN_USER_ID = int(os.environ['ADMIN_USER_ID'])
 
 LINE_WIDTH = 45
+
+
+CALLBACK_COMMANDS = {
+    'follow_all': 'fa',
+    'follow_team': 'fte',
+    'follow_tournament': 'fto',
+    'show_streams': 'ss',
+    'settings_to_begin': 's tb',
+    'settings_close': 's close',
+    'settings_to_language': 's tl',
+    'settings_change_lang': 's cl',
+    'remove_team_reminder': 'rter',
+    'remove_tournament_reminder': 'rtor'
+}

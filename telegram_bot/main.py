@@ -15,6 +15,7 @@ import reminders_sender
 import match_printing
 import chat_settings
 from chat_settings import get_lang
+from config import CALLBACK_COMMANDS
 
 
 def _inline_keyboard(buttons: typing.List[typing.List[typing.Tuple[str, str]]]):
@@ -61,20 +62,6 @@ async def start(update: telegram.Update, context: telegram.ext.ContextTypes.DEFA
                                    parse_mode='MarkdownV2')
 
 
-_CALLBACK_COMMANDS = {
-    'follow_all': 'fa',
-    'follow_team': 'fte',
-    'follow_tournament': 'fto',
-    'show_streams': 'ss',
-    'settings_to_begin': 's tb',
-    'settings_close': 's close',
-    'settings_to_language': 's tl',
-    'settings_change_lang': 's cl',
-    'remove_team_reminder': 'rter',
-    'remove_tournament_reminder': 'rtor'
-}
-
-
 async def _process_remove_reminders_callbacks(
         update: telegram.Update, context: telegram.ext.ContextTypes.DEFAULT_TYPE) -> bool:
     rs = reminders_storage.storage()
@@ -85,12 +72,12 @@ async def _process_remove_reminders_callbacks(
     elif update.callback_query.data == 'remove_all_reminder':
         rs.remove_all_reminder(str(update.effective_chat.id))
         removed = True
-    elif update.callback_query.data.startswith(f'{_CALLBACK_COMMANDS["remove_tournament_reminder"]} '):
-        tournament = update.callback_query.data[len(f'{_CALLBACK_COMMANDS["remove_tournament_reminder"]} '):]
+    elif update.callback_query.data.startswith(f'{CALLBACK_COMMANDS["remove_tournament_reminder"]} '):
+        tournament = update.callback_query.data[len(f'{CALLBACK_COMMANDS["remove_tournament_reminder"]} '):]
         rs.remove_tournament_reminder(str(update.effective_chat.id), tournament)
         removed = True
-    elif update.callback_query.data.startswith(f'{_CALLBACK_COMMANDS["remove_team_reminder"]} '):
-        team = update.callback_query.data[len(f'{_CALLBACK_COMMANDS["remove_team_reminder"]} '):]
+    elif update.callback_query.data.startswith(f'{CALLBACK_COMMANDS["remove_team_reminder"]} '):
+        team = update.callback_query.data[len(f'{CALLBACK_COMMANDS["remove_team_reminder"]} '):]
         rs.remove_team_reminder(str(update.effective_chat.id), team)
         removed = True
 
@@ -120,32 +107,32 @@ def _generate_command_with_options_keyboard(buttons_per_line: int, command: str,
 async def _process_follow_callbacks(update: telegram.Update, context: telegram.ext.ContextTypes.DEFAULT_TYPE):
     rs = reminders_storage.storage()
     followed = False
-    if update.callback_query.data == _CALLBACK_COMMANDS['follow_all']:
+    if update.callback_query.data == CALLBACK_COMMANDS['follow_all']:
         rs.add_all_reminder(str(update.effective_chat.id))
         followed = True
-    elif update.callback_query.data == _CALLBACK_COMMANDS['follow_team']:
+    elif update.callback_query.data == CALLBACK_COMMANDS['follow_team']:
         await context.bot.answer_callback_query(callback_query_id=update.callback_query.id)
         await context.bot.send_message(
             chat_id=update.effective_chat.id,
             text=localization.get('follow_team_select', get_lang(update)),
             reply_markup=_inline_keyboard(_generate_command_with_options_keyboard(
-                3, _CALLBACK_COMMANDS['follow_team'], matches_data_loader.get_teams())))
+                3, CALLBACK_COMMANDS['follow_team'], matches_data_loader.get_teams())))
         return True
-    elif update.callback_query.data == _CALLBACK_COMMANDS['follow_tournament']:
+    elif update.callback_query.data == CALLBACK_COMMANDS['follow_tournament']:
         await context.bot.answer_callback_query(callback_query_id=update.callback_query.id)
         await context.bot.send_message(
             chat_id=update.effective_chat.id,
             text=localization.get('follow_tournament_select', get_lang(update)),
             reply_markup=_inline_keyboard(_generate_command_with_options_keyboard(
-                1, _CALLBACK_COMMANDS["follow_tournament"], matches_data_loader.get_tournaments())))
+                1, CALLBACK_COMMANDS["follow_tournament"], matches_data_loader.get_tournaments())))
         return True
-    elif update.callback_query.data.startswith(f'{_CALLBACK_COMMANDS["follow_tournament"]} '):
-        tournament = update.callback_query.data[len(f'{_CALLBACK_COMMANDS["follow_tournament"]} '):]
+    elif update.callback_query.data.startswith(f'{CALLBACK_COMMANDS["follow_tournament"]} '):
+        tournament = update.callback_query.data[len(f'{CALLBACK_COMMANDS["follow_tournament"]} '):]
         # TODO check validity?
         rs.add_tournament_reminder(str(update.effective_chat.id), tournament)
         followed = True
-    elif update.callback_query.data.startswith(f'{_CALLBACK_COMMANDS["follow_team"]} '):
-        team = update.callback_query.data[len(f'{_CALLBACK_COMMANDS["follow_team"]} '):]
+    elif update.callback_query.data.startswith(f'{CALLBACK_COMMANDS["follow_team"]} '):
+        team = update.callback_query.data[len(f'{CALLBACK_COMMANDS["follow_team"]} '):]
         # TODO check validity?
         rs.add_team_reminder(str(update.effective_chat.id), team)
         followed = True
@@ -162,8 +149,8 @@ async def _send_settings_begin(update, context, message=None):
     lang = get_lang(update)
     text = localization.get('settings_begin_message', lang)
     markup = _inline_keyboard([[
-        (localization.get('settings_close_button', lang), _CALLBACK_COMMANDS['settings_close']),
-        (localization.get('settings_language_button', lang), _CALLBACK_COMMANDS['settings_to_language'])]])
+        (localization.get('settings_close_button', lang), CALLBACK_COMMANDS['settings_close']),
+        (localization.get('settings_language_button', lang), CALLBACK_COMMANDS['settings_to_language'])]])
     if message is None:
         await context.bot.send_message(
             chat_id=update.effective_chat.id,
@@ -174,25 +161,25 @@ async def _send_settings_begin(update, context, message=None):
 
 
 async def _process_settings_callbacks(update: telegram.Update, context: telegram.ext.ContextTypes.DEFAULT_TYPE):
-    if update.callback_query.data == _CALLBACK_COMMANDS['settings_to_begin']:
+    if update.callback_query.data == CALLBACK_COMMANDS['settings_to_begin']:
         await _send_settings_begin(update, context, update.callback_query.message)
         await context.bot.answer_callback_query(callback_query_id=update.callback_query.id)
         return True
-    if update.callback_query.data == _CALLBACK_COMMANDS['settings_close']:
+    if update.callback_query.data == CALLBACK_COMMANDS['settings_close']:
         await update.callback_query.message.delete()
         await context.bot.answer_callback_query(callback_query_id=update.callback_query.id)
         return True
-    if update.callback_query.data == _CALLBACK_COMMANDS['settings_to_language']:
+    if update.callback_query.data == CALLBACK_COMMANDS['settings_to_language']:
         markup = _generate_command_with_options_keyboard(
-            5, _CALLBACK_COMMANDS['settings_change_lang'], {locale: locale for locale in localization.all_locales()})
+            5, CALLBACK_COMMANDS['settings_change_lang'], {locale: locale for locale in localization.all_locales()})
         markup.append([(localization.get('settings_back_button', get_lang(update)),
-                        _CALLBACK_COMMANDS['settings_to_begin'])])
+                        CALLBACK_COMMANDS['settings_to_begin'])])
         await update.callback_query.message.edit_text(
             text=localization.get('settings_language_button', get_lang(update)),
             reply_markup=_inline_keyboard(markup))
         await context.bot.answer_callback_query(callback_query_id=update.callback_query.id)
         return True
-    settings_change_lang_prefix = f'{_CALLBACK_COMMANDS["settings_change_lang"]} '
+    settings_change_lang_prefix = f'{CALLBACK_COMMANDS["settings_change_lang"]} '
     if update.callback_query.data.startswith(settings_change_lang_prefix):
         lang = update.callback_query.data[len(settings_change_lang_prefix):]
         if lang not in localization.all_locales():
@@ -219,8 +206,8 @@ async def callback_query_handle(update: telegram.Update, context: telegram.ext.C
         return
     if await _process_settings_callbacks(update, context):
         return
-    if update.callback_query.data.startswith(f'{_CALLBACK_COMMANDS["show_streams"]} '):
-        match_id = int(update.callback_query.data[len(f'{_CALLBACK_COMMANDS["show_streams"]} '):])
+    if update.callback_query.data.startswith(f'{CALLBACK_COMMANDS["show_streams"]} '):
+        match_id = int(update.callback_query.data[len(f'{CALLBACK_COMMANDS["show_streams"]} '):])
         match = next((m for m in matches_data_loader.get_matches() if m.id == match_id), None)
         if match is None:
             await context.bot.answer_callback_query(
@@ -258,7 +245,7 @@ async def following(update: telegram.Update, context: telegram.ext.ContextTypes.
                                       team=reminder.value),
                 reply_markup=_inline_keyboard(
                     [[(localization.get('remove_reminder', get_lang(update)),
-                       f'{_CALLBACK_COMMANDS["remove_team_reminder"]} ' + reminder.value)]]))
+                       f'{CALLBACK_COMMANDS["remove_team_reminder"]} ' + reminder.value)]]))
         elif reminder.type_ == 'tournament':
             await context.bot.send_message(
                 chat_id=update.effective_chat.id,
@@ -266,7 +253,7 @@ async def following(update: telegram.Update, context: telegram.ext.ContextTypes.
                                       tournament=reminder.value),
                 reply_markup=_inline_keyboard(
                     [[(localization.get('remove_reminder', get_lang(update)),
-                       f'{_CALLBACK_COMMANDS["remove_tournament_reminder"]} ' + reminder.value)]]))
+                       f'{CALLBACK_COMMANDS["remove_tournament_reminder"]} ' + reminder.value)]]))
         elif reminder.type_ == 'all':
             await context.bot.send_message(
                 chat_id=update.effective_chat.id,
@@ -281,9 +268,9 @@ async def follow(update: telegram.Update, context: telegram.ext.ContextTypes.DEF
         chat_id=update.effective_chat.id,
         text=localization.get('follow_message', get_lang(update)),
         reply_markup=_inline_keyboard(
-            [[(localization.get('follow_all', get_lang(update)), _CALLBACK_COMMANDS['follow_all']),
-              (localization.get('follow_team', get_lang(update)), _CALLBACK_COMMANDS['follow_team']),
-              (localization.get('follow_tournament', get_lang(update)), _CALLBACK_COMMANDS['follow_tournament'])]]))
+            [[(localization.get('follow_all', get_lang(update)), CALLBACK_COMMANDS['follow_all']),
+              (localization.get('follow_team', get_lang(update)), CALLBACK_COMMANDS['follow_team']),
+              (localization.get('follow_tournament', get_lang(update)), CALLBACK_COMMANDS['follow_tournament'])]]))
 
 
 async def settings(update: telegram.Update, context: telegram.ext.ContextTypes.DEFAULT_TYPE):
@@ -292,8 +279,7 @@ async def settings(update: telegram.Update, context: telegram.ext.ContextTypes.D
 
 async def matches(update: telegram.Update, context: telegram.ext.ContextTypes.DEFAULT_TYPE):
     for match in matches_data_loader.get_matches():
-        await match_printing.print_match_message(context.bot, update.effective_chat.id, get_lang(update), match,
-                                                 _CALLBACK_COMMANDS["show_streams"])
+        await match_printing.print_match_message(context.bot, update.effective_chat.id, get_lang(update), match)
 
 
 @admin_only_command()

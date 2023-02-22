@@ -24,7 +24,7 @@ class _BaseModel(peewee.Model):
 
 
 class _ChatSetting(_BaseModel):
-    chat_id = peewee.CharField(unique=True)
+    chat_id = peewee.CharField(unique=False)
     setting_key = peewee.CharField(unique=False)
     setting_value = peewee.CharField(unique=False)
 

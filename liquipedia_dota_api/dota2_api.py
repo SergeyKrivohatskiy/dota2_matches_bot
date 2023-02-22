@@ -97,7 +97,7 @@ class Dota2Api:
                 team_name = team_a.text
                 team_page_link = team_a.get('href')
 
-                team_name = team_name[:60]  # TODO better fix for callback len
+                team_name = team_name[:50]  # TODO better fix for callback len
                 teams.append(Dota2Team(team_name, region_name, team_page_link, icon_link))
 
         return teams
@@ -126,7 +126,7 @@ class Dota2Api:
             teams = int(teams) if teams.isdigit() else None
             location = cells[5].text.replace('\xa0', ' ').strip()
 
-            name = name[:60]  # TODO better fix for callback len
+            name = name[:50]  # TODO better fix for callback len
             result.append(Dota2Tournament(name, liquipedia_page, tier, date, prize, teams, location))
 
         return result

@@ -95,14 +95,15 @@ def _match_message(lang: str, match: matches_data_loader.Dota2Match) -> str:
     return f'{match_prefix}{team_vs_team}\n{start_time}\n{tournament_str}'
 
 
-async def print_match_message(bot: telegram.Bot, chat_id: int, lang: str, match: matches_data_loader.Dota2Match):
+async def print_match_message(bot: telegram.Bot, chat_id: int, lang: str, match: matches_data_loader.Dota2Match,
+                              show_streams_command):
     message = _match_message(lang, match)
     if len(match.streams) == 0:
         reply_markup = None
     else:
         reply_markup = telegram.InlineKeyboardMarkup([[telegram.InlineKeyboardButton(
             localization.get('show_streams', lang, count=len(match.streams)),
-            callback_data=f'show_streams {match.id}'
+            callback_data=f'{show_streams_command} {match.id}'
         )]])
     await bot.send_message(
         chat_id=chat_id,

@@ -61,6 +61,20 @@ async def start(update: telegram.Update, context: telegram.ext.ContextTypes.DEFA
                                    parse_mode='MarkdownV2')
 
 
+_CALLBACK_COMMANDS = {
+    'follow_all': 'fa',
+    'follow_team': 'fte',
+    'follow_tournament': 'fto',
+    'show_streams': 'ss',
+    'settings_to_begin': 's tb',
+    'settings_close': 's close',
+    'settings_to_language': 's tl',
+    'settings_change_lang': 's cl',
+    'remove_team_reminder': 'rter',
+    'remove_tournament_reminder': 'rtor'
+}
+
+
 async def _process_remove_reminders_callbacks(
         update: telegram.Update, context: telegram.ext.ContextTypes.DEFAULT_TYPE) -> bool:
     rs = reminders_storage.storage()
@@ -71,12 +85,12 @@ async def _process_remove_reminders_callbacks(
     elif update.callback_query.data == 'remove_all_reminder':
         rs.remove_all_reminder(str(update.effective_chat.id))
         removed = True
-    elif update.callback_query.data.startswith('remove_tournament_reminder '):
-        tournament = update.callback_query.data[len('remove_tournament_reminder '):]
+    elif update.callback_query.data.startswith(f'{_CALLBACK_COMMANDS["remove_tournament_reminder"]} '):
+        tournament = update.callback_query.data[len(f'{_CALLBACK_COMMANDS["remove_tournament_reminder"]} '):]
         rs.remove_tournament_reminder(str(update.effective_chat.id), tournament)
         removed = True
-    elif update.callback_query.data.startswith('remove_team_reminder '):
-        team = update.callback_query.data[len('remove_team_reminder '):]
+    elif update.callback_query.data.startswith(f'{_CALLBACK_COMMANDS["remove_team_reminder"]} '):
+        team = update.callback_query.data[len(f'{_CALLBACK_COMMANDS["remove_team_reminder"]} '):]
         rs.remove_team_reminder(str(update.effective_chat.id), team)
         removed = True
 
@@ -101,18 +115,6 @@ def _generate_command_with_options_keyboard(buttons_per_line: int, command: str,
         buttons.append(buttons_line)
 
     return buttons
-
-
-_CALLBACK_COMMANDS = {
-    'follow_all': 'fa',
-    'follow_team': 'fte',
-    'follow_tournament': 'fto',
-    'show_streams': 'ss',
-    'settings_to_begin': 's tb',
-    'settings_close': 's close',
-    'settings_to_language': 's tl',
-    'settings_change_lang': 's cl'
-}
 
 
 async def _process_follow_callbacks(update: telegram.Update, context: telegram.ext.ContextTypes.DEFAULT_TYPE):
@@ -256,7 +258,7 @@ async def following(update: telegram.Update, context: telegram.ext.ContextTypes.
                                       team=reminder.value),
                 reply_markup=_inline_keyboard(
                     [[(localization.get('remove_reminder', get_lang(update)),
-                       'remove_team_reminder ' + reminder.value)]]))
+                       f'{_CALLBACK_COMMANDS["remove_team_reminder"]} ' + reminder.value)]]))
         elif reminder.type_ == 'tournament':
             await context.bot.send_message(
                 chat_id=update.effective_chat.id,
@@ -264,7 +266,7 @@ async def following(update: telegram.Update, context: telegram.ext.ContextTypes.
                                       tournament=reminder.value),
                 reply_markup=_inline_keyboard(
                     [[(localization.get('remove_reminder', get_lang(update)),
-                       'remove_tournament_reminder ' + reminder.value)]]))
+                       f'{_CALLBACK_COMMANDS["remove_tournament_reminder"]} ' + reminder.value)]]))
         elif reminder.type_ == 'all':
             await context.bot.send_message(
                 chat_id=update.effective_chat.id,

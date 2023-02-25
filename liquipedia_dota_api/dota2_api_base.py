@@ -13,7 +13,7 @@ def _get_as_soup(url, headers):
     response = requests.get(url, headers=headers)
 
     if response.status_code != 200:
-        raise RequestsException(response.json(), response.status_code)
+        raise RequestsException(response.content, response.status_code)
 
     try:
         page_html = response.json()['parse']['text']['*']

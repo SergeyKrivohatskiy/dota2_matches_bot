@@ -141,6 +141,7 @@ class DataLoader:
         try:
             _logger.info('Started data updating')
             matches: typing.List[liquipedia_dota_api.Dota2Match] = self._dota2_api.get_matches()
+            _logger.info('%d matches loaded' % len(matches))
             matches = matches[:config.MAXIMUM_MATCHES_TO_LOAD]
             streams: typing.List[typing.List[twitch_streams_search.StreamInfo]] = self._get_streams_info(matches)
 
@@ -171,8 +172,12 @@ class DataLoader:
                 tournament_page_tournament[tournaments_info.liquipedia_page] = tournaments_info
 
             def get_tournament_info(source: liquipedia_dota_api.TournamentInfoInMatch):
-                if source.liquipedia_page in tournament_page_tournament:
-                    info = tournament_page_tournament[source.liquipedia_page]
+                liquipedia_page = source.liquipedia_page
+                group_suffix = '/Group_Stage'
+                if liquipedia_page.endswith(group_suffix):
+                    liquipedia_page = liquipedia_page[:-len(group_suffix)]
+                if liquipedia_page in tournament_page_tournament:
+                    info = tournament_page_tournament[liquipedia_page]
                     location = info.location
                     prize_pool_dollars = info.prize_pool_dollars
                     tier = info.tier
@@ -186,7 +191,7 @@ class DataLoader:
                     date = None
                     teams_count = None
 
-                return TournamentInfo(source.name, source.liquipedia_page,
+                return TournamentInfo(source.name, liquipedia_page,
                                       tier, date, prize_pool_dollars, teams_count, location)
 
             new_matches: typing.List[Dota2Match] = []

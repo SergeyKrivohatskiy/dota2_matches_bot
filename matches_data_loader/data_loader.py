@@ -106,6 +106,52 @@ def _match_match_ids(data, new_data):
                 new_m.id = m.id
 
 
+def _region_info(team_page_to_region, source: liquipedia_dota_api.Dota2TeamInMatch):
+    if source.liquipedia_page in team_page_to_region:
+        return team_page_to_region[source.liquipedia_page]
+    else:
+        _logger.info('team %s region not found' % source.name)
+        return None
+
+
+def _get_team_info(team_page_to_region, source: liquipedia_dota_api.Dota2TeamInMatch):
+    if source is None:
+        return None
+    return Dota2Team(source.name, _region_info(team_page_to_region, source), source.liquipedia_page, source.icon)
+
+
+def _get_tournament_info(tournament_page_tournament: typing.Dict[str, liquipedia_dota_api.Dota2Tournament],
+                         source: liquipedia_dota_api.TournamentInfoInMatch) -> TournamentInfo:
+    liquipedia_page = source.liquipedia_page
+    group_suffix = '/Group_Stage'
+    if liquipedia_page.endswith(group_suffix):
+        liquipedia_page = liquipedia_page[:-len(group_suffix)]
+    if liquipedia_page in tournament_page_tournament:
+        info = tournament_page_tournament[liquipedia_page]
+        location = info.location
+        prize_pool_dollars = info.prize_pool_dollars
+        tier = info.tier
+        date = info.date
+        teams_count = info.teams_count
+    else:
+        _logger.info('tournament %s info not found' % source.name)
+        location = None
+        prize_pool_dollars = None
+        tier = None
+        date = None
+        teams_count = None
+
+    return TournamentInfo(source.name, liquipedia_page,
+                          tier, date, prize_pool_dollars, teams_count, location)
+
+
+def _get_tournament_page_tournament(tournaments):
+    res = dict()
+    for tournament_info in tournaments:
+        res[tournament_info.liquipedia_page] = tournament_info
+    return res
+
+
 class DataLoader:
     def __init__(self, data_update_period=config.DATA_UPDATE_TIMEOUT):
         self._dota2_api = liquipedia_dota_api.Dota2Api(app_name=config.APP_NAME)
@@ -137,6 +183,22 @@ class DataLoader:
         self._data_update_stop_event.set()
         self._data_update_thread.join()
 
+    def _get_teams(self):
+        if self.data_version() % config.TEAMS_UPD_PERIOD_MUL == 0:
+            _logger.info('updating teams')
+            self._saved_teams = self._dota2_api.get_teams()
+            _logger.info('%d teams loaded' % len(self._saved_teams))
+        assert self._saved_teams is not None
+        return self._saved_teams
+
+    def _get_tournaments(self):
+        if self.data_version() % config.TOURNAMENTS_UPD_PERIOD_MUL == 0:
+            _logger.info('updating tournaments')
+            self._saved_tournaments = self._dota2_api.get_tournaments()
+            _logger.info('%d tournaments loaded' % len(self._saved_tournaments))
+        assert self._saved_tournaments is not None
+        return self._saved_tournaments
+
     def _data_update(self):
         try:
             _logger.info('Started data updating')
@@ -145,60 +207,17 @@ class DataLoader:
             matches = matches[:config.MAXIMUM_MATCHES_TO_LOAD]
             streams: typing.List[typing.List[twitch_streams_search.StreamInfo]] = self._get_streams_info(matches)
 
-            # TODO maybe do not update every time
-            teams: typing.List[liquipedia_dota_api.Dota2Team] = self._dota2_api.get_teams()
-            _logger.info('%d teams loaded' % len(teams))
-
-            # TODO maybe do not update every time
-            tournaments = self._dota2_api.get_tournaments()
-            _logger.info('%d tournaments loaded' % len(tournaments))
+            teams: typing.List[liquipedia_dota_api.Dota2Team] = self._get_teams()
+            tournaments: typing.List[liquipedia_dota_api.Dota2Tournament] = self._get_tournaments()
 
             team_page_to_region = _get_team_page_to_region(teams)
-
-            def region_info(source: liquipedia_dota_api.Dota2TeamInMatch):
-                if source.liquipedia_page in team_page_to_region:
-                    return team_page_to_region[source.liquipedia_page]
-                else:
-                    _logger.info('team %s region not found' % source.name)
-                    return None
-
-            def get_team_info(source: liquipedia_dota_api.Dota2TeamInMatch):
-                if source is None:
-                    return None
-                return Dota2Team(source.name, region_info(source), source.liquipedia_page, source.icon)
-
-            tournament_page_tournament = dict()
-            for tournaments_info in tournaments:
-                tournament_page_tournament[tournaments_info.liquipedia_page] = tournaments_info
-
-            def get_tournament_info(source: liquipedia_dota_api.TournamentInfoInMatch):
-                liquipedia_page = source.liquipedia_page
-                group_suffix = '/Group_Stage'
-                if liquipedia_page.endswith(group_suffix):
-                    liquipedia_page = liquipedia_page[:-len(group_suffix)]
-                if liquipedia_page in tournament_page_tournament:
-                    info = tournament_page_tournament[liquipedia_page]
-                    location = info.location
-                    prize_pool_dollars = info.prize_pool_dollars
-                    tier = info.tier
-                    date = info.date
-                    teams_count = info.teams_count
-                else:
-                    _logger.info('tournament %s info not found' % source.name)
-                    location = None
-                    prize_pool_dollars = None
-                    tier = None
-                    date = None
-                    teams_count = None
-
-                return TournamentInfo(source.name, liquipedia_page,
-                                      tier, date, prize_pool_dollars, teams_count, location)
+            tournament_page_tournament = _get_tournament_page_tournament(tournaments)
 
             new_matches: typing.List[Dota2Match] = []
             for match, streams_info in zip(matches, streams):
                 new_matches.append(Dota2Match(
-                    get_team_info(match.team1), get_team_info(match.team2),
-                    get_tournament_info(match.tournament),
+                    _get_team_info(team_page_to_region, match.team1), _get_team_info(team_page_to_region, match.team2),
+                    _get_tournament_info(tournament_page_tournament, match.tournament),
                     streams_info,
                     match.score,
                     match.format,

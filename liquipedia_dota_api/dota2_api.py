@@ -104,17 +104,17 @@ class Dota2Api:
 
     def get_tournaments(self) -> typing.List[Dota2Tournament]:
         soup, _ = self._base.parse('Portal:Tournaments')
-        ongoing_tournaments_table = soup('div', 'table-responsive')[1]
-        tournament_rows = ongoing_tournaments_table('div', 'divRow')
+        ongoing_tournaments_table = soup('div', 'gridTable')[1]
+        tournament_rows = ongoing_tournaments_table('div', 'gridRow')
 
         result = list()
 
         for tournament_row in tournament_rows:
-            cells = tournament_row('div', 'divCell')
+            cells = tournament_row('div', 'gridCell')
 
             tier = cells[0].a.text
-            liquipedia_page = cells[1].b.a.get('href')
-            name = cells[1].b.a.text
+            liquipedia_page = cells[1]('a')[-1].get('href')
+            name = cells[1]('a')[-1].text
             date = cells[2].text
             prize_str: str = cells[3].text
             prize = None
@@ -122,9 +122,9 @@ class Dota2Api:
                 prize_str = prize_str[1:].replace(',', '')
                 if prize_str.isdigit():
                     prize = int(prize_str)
-            teams = cells[4].text.replace('\xa0teams', '')
+            teams = cells[5].text.replace('\xa0participants', '')
             teams = int(teams) if teams.isdigit() else None
-            location = cells[5].text.replace('\xa0', ' ').strip()
+            location = cells[4].text.replace('\xa0', ' ').strip()
 
             name = name[:50]  # TODO better fix for callback len
             result.append(Dota2Tournament(name, liquipedia_page, tier, date, prize, teams, location))

@@ -31,7 +31,10 @@ class RemindersSender:
 
     async def _check_loop_async(self):
         while True:
-            await self._check_reminders()
+            try:
+                await self._check_reminders()
+            except Exception as e:
+                _logger.error('Unexpected error while checking reminders', exc_info=e)
             if self._stop_event.wait(self._check_period):
                 break
 
@@ -78,5 +81,8 @@ class RemindersSender:
         _logger.info(f'sending {len(reminders)} reminders about match {match_descriptor}')
 
         for chat_id in reminders:
-            await match_printing.print_match_message(
-                self._bot, int(chat_id), chat_settings.get_lang_for_known_chat(chat_id), match)
+            try:
+                await match_printing.print_match_message(
+                    self._bot, int(chat_id), chat_settings.get_lang_for_known_chat(chat_id), match)
+            except telegram.error.TelegramError as e:
+                _logger.warning('Failed to send reminder to chat %s' % chat_id, exc_info=e)
